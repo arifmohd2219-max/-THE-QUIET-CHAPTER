@@ -37,6 +37,18 @@
 @media(max-width:560px){#diaryOverlay{padding:8px}.diary-shell{gap:7px}.diary-book{width:min(100%,560px);height:calc(100dvh - 170px);max-height:820px;min-height:0}.diary-paper{padding:clamp(18px,5vw,28px) clamp(17px,5vw,24px)}.diary-controls{gap:5px}.diary-controls button{padding:8px 10px;font-size:12px}.diary-counter{font-size:10px;min-width:70px}.diary-admin form{max-height:20vh;overflow:auto}.diary-status{font-size:10px}}
 @media(min-width:561px){.diary-book{height:min(82vh,820px)}}
 .diary-paper #diaryPageBody p{overflow-wrap:anywhere}
+#diaryAdmin{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:18px;background:#35284366;backdrop-filter:blur(5px)}
+#diaryAdmin form{width:min(100%,520px);max-height:min(86dvh,720px);overflow:auto;gap:12px;padding:20px;background:#fffafd;border:1px solid #fff;border-radius:22px;box-shadow:0 24px 70px #2d183744}
+#diaryAdmin strong{font-size:18px;font-weight:normal;color:#80536f}
+#diaryAdmin input,#diaryAdmin textarea{font:16px/1.5 Georgia,serif;padding:12px}
+#diaryAdmin textarea{min-height:180px;resize:vertical}
+#diaryAdmin .diary-owner-tools{margin-top:2px}
+.diary-inline-edit{display:grid;gap:10px;width:100%}
+.diary-inline-edit input,.diary-inline-edit textarea{width:100%;padding:10px 12px;border:1px solid #d9b9ca;border-radius:10px;background:#fffdfb;color:#49352e;font:16px/1.5 Georgia,serif}
+.diary-inline-edit input{font-size:clamp(20px,3.4vw,30px);text-align:center}
+.diary-inline-edit textarea{height:min(42dvh,360px);min-height:150px;resize:vertical}
+.diary-inline-edit .diary-owner-tools{margin-top:0}
+.diary-inline-edit button[type=submit]{background:linear-gradient(105deg,#e77da5,#a78bd0);color:white;border-color:transparent}
 .diary-edit-form{display:grid;gap:7px;margin-top:12px}.diary-edit-form input,.diary-edit-form textarea{width:100%;padding:9px;border:1px solid #e4c6d5;border-radius:10px;background:#fffafc;color:#69475f;font:14px Georgia,serif}.diary-edit-form textarea{min-height:140px}.diary-edit-form button{min-height:38px;padding:9px 14px;cursor:pointer}.diary-edit-form button[type="submit"]{background:linear-gradient(105deg,#e77da5,#a78bd0);color:#fff;border-color:transparent}.diary-edit-form button:disabled{opacity:.6;cursor:wait}.diary-owner-tools{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:10px}.diary-owner-tools button{border:1px solid #e4c6d5;border-radius:20px;background:#fff5e8;color:#69434c;padding:8px 12px;font:12px Georgia,serif}
 
 
@@ -117,8 +129,8 @@
    </section>
    <section class="diary-page diary-paper hidden" id="diaryContentPage"><div class="diary-paper-inner"><div class="diary-page-label" id="diaryPageLabel">The Quiet Chapter</div><h2 id="diaryPageTitle"></h2><div class="diary-rule"></div><div id="diaryPageBody"></div><div id="diaryOwnerActions"></div></div></section>
   </main>
-  <div class="diary-controls"><button type="button" id="diaryPrev">← Previous</button><span class="diary-counter" id="diaryCounter">Cover · 1</span><button type="button" id="diaryNext">Next Page →</button><button type="button" class="diary-close" id="diaryClose">Close ×</button></div>
-  <div class="diary-admin hidden" id="diaryAdmin"><form id="diaryAddForm"><strong>Add a new page (owner only) ♡</strong><input id="diaryNewTitle" maxlength="120" placeholder="Page title" required><textarea id="diaryNewBody" maxlength="10000" placeholder="Write the page in Hinglish…" required></textarea><button type="submit">＋ Add Next Page</button></form></div>
+  <div class="diary-controls"><button type="button" id="diaryPrev">← Previous</button><span class="diary-counter" id="diaryCounter">Cover · 1</span><button type="button" id="diaryNext">Next Page →</button><button type="button" id="diaryAddOpen" class="hidden">＋ Add Page</button><button type="button" class="diary-close" id="diaryClose">Close ×</button></div>
+  <div class="diary-admin hidden" id="diaryAdmin" role="dialog" aria-modal="true" aria-label="Add diary page"><form id="diaryAddForm"><strong>Add a new page ♡</strong><input id="diaryNewTitle" maxlength="120" placeholder="Page title" required><textarea id="diaryNewBody" maxlength="10000" placeholder="Write the page in Hinglish…" required></textarea><div class="diary-owner-tools"><button type="submit">＋ Add Page</button><button type="button" id="diaryAddCancel">Cancel</button></div></form></div>
   <div class="diary-status" id="diaryStatus">Diary pages are loading…</div>
  </div>
 </div>
@@ -183,7 +195,7 @@ async function openDiary(){
  try{
   const {data:{user},error:userErr}=await qcClient.auth.getUser(); if(userErr||!user)throw new Error('Login session nahi mili.'); qcDiaryUser=user;
   const {data,error}=await qcClient.from('qc_diary_pages').select('id,title,body,page_order,created_at,author_id').order('page_order',{ascending:true}).order('created_at',{ascending:true}); if(error)throw error;
-  qcDiaryPages=data||[]; const isOwner=user.id===QC_OWNER_UID; document.getElementById('diaryAdmin').classList.toggle('hidden',!isOwner);
+  qcDiaryPages=data||[]; const isOwner=user.id===QC_OWNER_UID; document.getElementById('diaryAddOpen').classList.toggle('hidden',!isOwner); document.getElementById('diaryAdmin').classList.add('hidden');
   diarySay(isOwner?'Tum owner ho — pages add, edit aur delete kar sakte ho.':'Tum diary read kar sakte ho aur memories add kar sakte ho.'); qcDiaryIndex=Math.min(qcDiaryIndex,qcDiaryPages.length); renderDiary();
  }catch(e){qcDiaryPages=[];qcDiaryIndex=0;renderDiary();diarySay('Diary load nahi hui. Supabase SQL setup aur login check karo. '+(e.message||''))}
 }
@@ -214,8 +226,16 @@ function renderDiary(){
   if(qcDiaryUser&&qcDiaryUser.id===QC_OWNER_UID){
    const tools=document.createElement('div');tools.className='diary-owner-tools';
    const edit=document.createElement('button');edit.type='button';edit.textContent='✎ Edit Page';
-   edit.addEventListener('click',()=>{if(qcDiaryEditing)return;qcDiaryEditing=true;const original=item._original;const form=document.createElement('form');form.className='diary-edit-form';form.innerHTML='<input id="diaryEditTitle" maxlength="120" required aria-label="Page title"><textarea id="diaryEditBody" maxlength="10000" required aria-label="Page text"></textarea><div class="diary-owner-tools"><button type="submit">Save Changes</button><button type="button" id="diaryEditCancel">Cancel</button></div>';form.querySelector('input').value=original.title;form.querySelector('textarea').value=original.body;diaryOwnerActions.appendChild(form);edit.disabled=true;
-    form.addEventListener('submit',async ev=>{ev.preventDefault();const save=form.querySelector('button[type=submit]');save.disabled=true;const {error}=await qcClient.from('qc_diary_pages').update({title:form.querySelector('input').value.trim(),body:form.querySelector('textarea').value.trim()}).eq('id',original.id);if(error){diarySay('Save fail hua: '+error.message);save.disabled=false;return}qcDiaryEditing=false;await openDiary();diarySay('Page update ho gaya ♡')});form.querySelector('#diaryEditCancel').addEventListener('click',()=>{qcDiaryEditing=false;renderDiary()});});tools.appendChild(edit);
+   edit.addEventListener('click',()=>{
+    if(qcDiaryEditing)return; qcDiaryEditing=true;
+    const original=item._original, inner=document.querySelector('.diary-paper-inner');
+    document.getElementById('diaryPageTitle').classList.add('hidden');document.getElementById('diaryPageBody').classList.add('hidden');diaryOwnerActions.classList.add('hidden');
+    const form=document.createElement('form');form.className='diary-inline-edit';
+    form.innerHTML='<label>Page title<input id="diaryEditTitle" maxlength="120" required aria-label="Page title"></label><label>Page text<textarea id="diaryEditBody" maxlength="10000" required aria-label="Page text"></textarea></label><div class="diary-owner-tools"><button type="submit">💾 Save Changes</button><button type="button" id="diaryEditCancel">Cancel</button></div><p class="diary-status" id="diaryEditMessage" aria-live="polite"></p>';
+    inner.appendChild(form);form.querySelector('input').value=original.title;form.querySelector('textarea').value=original.body;
+    form.addEventListener('submit',async ev=>{ev.preventDefault();const save=form.querySelector('button[type=submit]');save.disabled=true;const title=form.querySelector('input').value.trim(),body=form.querySelector('textarea').value.trim();if(!title||!body){form.querySelector('#diaryEditMessage').textContent='Title aur text dono required hain.';save.disabled=false;return}const {error}=await qcClient.from('qc_diary_pages').update({title,body}).eq('id',original.id);if(error){form.querySelector('#diaryEditMessage').textContent='Save fail hua: '+error.message;save.disabled=false;return}qcDiaryEditing=false;await openDiary();diarySay('Page update ho gaya ♡')});
+    form.querySelector('#diaryEditCancel').addEventListener('click',()=>{qcDiaryEditing=false;form.remove();document.getElementById('diaryPageTitle').classList.remove('hidden');document.getElementById('diaryPageBody').classList.remove('hidden');diaryOwnerActions.classList.remove('hidden');renderDiary()});
+   });tools.appendChild(edit);
    const del=document.createElement('button');del.type='button';del.textContent='Delete Page';del.addEventListener('click',async()=>{if(!confirm('Is diary page ko permanently delete karna hai?'))return;del.disabled=true;const {error}=await qcClient.from('qc_diary_pages').delete().eq('id',item._original.id);if(error){diarySay('Delete fail hua: '+error.message);del.disabled=false}else{qcDiaryIndex=Math.max(0,qcDiaryIndex-1);await openDiary();diarySay('Page delete ho gaya.')}});tools.appendChild(del);diaryOwnerActions.appendChild(tools);
   }
   requestAnimationFrame(()=>{fitDiaryText();if(document.querySelector('.diary-paper-inner')?.scrollHeight>document.querySelector('.diary-paper-inner')?.clientHeight+2){diarySay('Text ko readable rakhne ke liye content next reading page par continue hoga.')}});
@@ -225,7 +245,10 @@ function renderDiary(){
 }
 document.getElementById('diaryPrev').addEventListener('click',()=>{if(qcDiaryIndex>0){qcDiaryIndex--;renderDiary()}});
 document.getElementById('diaryNext').addEventListener('click',()=>{if(qcDiaryIndex<diaryVirtualPages().length){qcDiaryIndex++;renderDiary()}});
-document.getElementById('diaryClose').addEventListener('click',()=>diaryOverlay.classList.add('hidden'));
+document.getElementById('diaryClose').addEventListener('click',()=>{diaryOverlay.classList.add('hidden');document.getElementById('diaryAdmin').classList.add('hidden')});
+document.getElementById('diaryAddOpen').addEventListener('click',()=>{document.getElementById('diaryNewTitle').value='';document.getElementById('diaryNewBody').value='';document.getElementById('diaryAdmin').classList.remove('hidden');document.getElementById('diaryNewTitle').focus()});
+document.getElementById('diaryAddCancel').addEventListener('click',()=>document.getElementById('diaryAdmin').classList.add('hidden'));
+document.getElementById('diaryAdmin').addEventListener('click',e=>{if(e.target.id==='diaryAdmin')document.getElementById('diaryAdmin').classList.add('hidden')});
 diaryOverlay.addEventListener('click',e=>{if(e.target===diaryOverlay)diaryOverlay.classList.add('hidden')});
 document.getElementById('diaryAddForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!qcDiaryUser||qcDiaryUser.id!==QC_OWNER_UID){diarySay('Sirf owner page add kar sakta hai.');return}
@@ -236,8 +259,9 @@ document.getElementById('diaryAddForm').addEventListener('submit',async e=>{
   // page_order is an INTEGER in Supabase: never insert fractional values such as 2.5.
   // Insert at the end first, then move it to the intended position using integer ordering.
   const currentVirtual=diaryVirtualPages()[Math.max(0,qcDiaryIndex-1)];
-  const maxOrder=qcDiaryPages.reduce((m,p)=>Math.max(m,Math.ceil(Number(p.page_order)||0)),0);
-  const {data:newRow,error:insertErr}=await qcClient.from('qc_diary_pages').insert({title,body,page_order:maxOrder+1,author_id:qcDiaryUser.id}).select('id,title,body,page_order,created_at,author_id').single();
+  const maxOrder=qcDiaryPages.reduce((m,p)=>Math.max(m,Math.trunc(Number(p.page_order)||0)),0);
+  const nextOrder=Math.trunc(maxOrder)+1;
+  const {data:newRow,error:insertErr}=await qcClient.from('qc_diary_pages').insert({title,body,page_order:nextOrder,author_id:qcDiaryUser.id}).select('id,title,body,page_order,created_at,author_id').single();
   if(insertErr)throw insertErr;
   const {data:rows,error:readErr}=await qcClient.from('qc_diary_pages').select('id,page_order,created_at').order('page_order',{ascending:true}).order('created_at',{ascending:true});
   if(readErr)throw readErr;
@@ -254,11 +278,11 @@ document.getElementById('diaryAddForm').addEventListener('submit',async e=>{
    const {error:orderErr}=await qcClient.from('qc_diary_pages').update({page_order:i+1}).eq('id',ordered[i].id);
    if(orderErr)throw orderErr;
   }
-  document.getElementById('diaryNewTitle').value='';document.getElementById('diaryNewBody').value='';
+  document.getElementById('diaryNewTitle').value='';document.getElementById('diaryNewBody').value='';document.getElementById('diaryAdmin').classList.add('hidden');
   await openDiary();const added=qcDiaryPages.findIndex(p=>p.id===newRow.id);qcDiaryIndex=Math.max(1,added+1);renderDiary();diarySay('New page sahi jagah add ho gaya ♡');
- }catch(err){diarySay('Page add nahi hua: '+(err.message||'Supabase permissions/schema check karo.')+' Purane fractional page_order values ko normalize karna zaroori ho sakta hai.')}finally{btn.disabled=false}
+ }catch(err){diarySay('Page add nahi hua: '+(err.message||'Supabase permissions/schema check karo.'));document.getElementById('diaryAdmin').classList.remove('hidden')}finally{btn.disabled=false}
 });
-document.addEventListener('keydown',e=>{if(diaryOverlay.classList.contains('hidden'))return;if(e.key==='Escape')diaryOverlay.classList.add('hidden');if(e.key==='ArrowRight')document.getElementById('diaryNext').click();if(e.key==='ArrowLeft')document.getElementById('diaryPrev').click()});
+document.addEventListener('keydown',e=>{if(diaryOverlay.classList.contains('hidden'))return;if(e.key==='Escape'){document.getElementById('diaryAdmin').classList.add('hidden');diaryOverlay.classList.add('hidden')}if(e.key==='ArrowRight')document.getElementById('diaryNext').click();if(e.key==='ArrowLeft')document.getElementById('diaryPrev').click()});
 </script>
 
 <script>
