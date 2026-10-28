@@ -154,6 +154,27 @@
 </div>
 
 <div id="notice" class="hidden" role="dialog" aria-modal="true" aria-labelledby="noticeTitle"><div class="notice-card"><div class="notice-heart" aria-hidden="true">♡</div><h2 id="noticeTitle" class="notice-title">Yeh kona abhi tayyar ho raha hai</h2><p id="noticeText" class="notice-text">Is section ka content hum baad mein add karenge. ♡</p><button id="noticeClose" class="notice-button" type="button">Theek hai ♡</button></div></div>
+
+<style>
+#chatOverlay{position:fixed;inset:0;z-index:40;background:#f8efe6;color:#543c32;display:flex;align-items:center;justify-content:center;padding:12px;font-family:Arial,sans-serif}
+.chat-shell{width:min(100%,850px);height:min(94vh,900px);background:#fffaf4;border:1px solid #e5d1c0;border-radius:22px;box-shadow:0 18px 60px #543c3220;display:flex;flex-direction:column;overflow:hidden}
+.chat-head{padding:16px 18px;background:#ead8c8;display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-head h2{font:normal 23px Georgia,serif}.chat-sub{font-size:12px;color:#84685a;margin-top:4px}.chat-btn{border:1px solid #d8bdab;background:#fff8f1;color:#694c3e;border-radius:18px;padding:8px 12px;cursor:pointer}
+#chatSearch{margin:10px 12px 0;padding:10px;border:1px solid #e5d1c0;border-radius:12px;background:white}
+#chatMessages{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:9px;background:linear-gradient(#fbf4ed,#f8eee5)}
+.chat-bubble{max-width:82%;padding:10px 12px;border-radius:15px;background:white;border:1px solid #ead8c8;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap}
+.chat-bubble.mine{align-self:flex-end;background:#f0dfd2}.chat-meta{font-size:10px;color:#967c6e;margin-top:6px;text-align:right}.chat-compose{display:flex;gap:7px;padding:12px;border-top:1px solid #ead8c8;background:#fffaf4}.chat-compose textarea{resize:none;min-width:0;flex:1;border:1px solid #e0caba;border-radius:13px;padding:11px;background:white;color:#543c32;font:14px Arial}.chat-status{padding:4px 13px;font-size:12px;color:#967c6e;min-height:23px}
+@media(max-width:520px){.chat-shell{height:96vh;border-radius:16px}.chat-head h2{font-size:20px}.chat-bubble{max-width:90%}}
+</style>
+<div id="chatOverlay" class="hidden" role="dialog" aria-modal="true" aria-label="Private chat">
+ <section class="chat-shell">
+  <header class="chat-head"><div><h2>Our Little Chat ♡</h2><div class="chat-sub">A private corner for two</div></div><button id="chatClose" class="chat-btn">Close ✕</button></header>
+  <input id="chatSearch" placeholder="Search messages…" aria-label="Search messages">
+  <div id="chatStatus" class="chat-status">Connecting…</div>
+  <div id="chatMessages" aria-live="polite"></div>
+  <form id="chatForm" class="chat-compose"><textarea id="chatInput" rows="1" maxlength="5000" placeholder="Write something…"></textarea><button class="chat-btn" type="submit">Send ♡</button></form>
+ </section>
+</div>
+
 <script>
 /* Main six-digit PIN preserved from the existing website. */
 const CORRECT_PIN="727663",MAX_ATTEMPTS=5,LOCK_DURATION=30000,AUTO_LOCK_DELAY=60000;
@@ -168,7 +189,7 @@ function showWelcome(){document.getElementById('welcomeGreeting').textContent=ge
 function lockWebsite(){unlocked=false;hiddenAt=null;if(heartInterval){clearInterval(heartInterval);heartInterval=null}document.querySelectorAll('.floating-heart').forEach(el=>el.remove());notice.classList.add('hidden');pinInput.value='';pinMessage.textContent='';showPage(lockPage)}
 document.getElementById('pinForm').addEventListener('submit',e=>{e.preventDefault();const remaining=lockUntil-Date.now();if(remaining>0){pinMessage.textContent=`Too many attempts. ${Math.ceil(remaining/1000)} seconds wait karo.`;return}if(lockUntil>0){lockUntil=0;failedAttempts=0}const entered=pinInput.value;if(!/^[0-9]{6}$/.test(entered)){pinMessage.textContent='6-digit PIN enter karo.';return}if(entered===CORRECT_PIN){failedAttempts=0;lockUntil=0;unlockWebsite()}else{failedAttempts++;pinInput.value='';if(failedAttempts>=MAX_ATTEMPTS){lockUntil=Date.now()+LOCK_DURATION;pinMessage.textContent='5 attempts complete! 30 seconds wait karo.'}else{pinMessage.textContent=`PIN sahi nahi hai. ${MAX_ATTEMPTS-failedAttempts} attempts baaki hain.`}pinInput.focus()}});
 document.getElementById('enterWorldButton').addEventListener('click',()=>{if(unlocked && window.__qcAuthenticated)showPage(homePage)});document.getElementById('lockButton').addEventListener('click',lockWebsite);
-document.querySelectorAll('.section-card').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.section;if(key==='diary'){openDiary();return;}if(key==='photos'){openMediaGallery();return;}if(key==='chats'){document.getElementById('noticeTitle').textContent='Chats ka kona abhi tayyar ho raha hai ♡';document.getElementById('noticeText').textContent='Is section ko hum agle step mein banayenge.'}else{document.getElementById('noticeTitle').textContent='Yeh kona abhi tayyar ho raha hai ♡';document.getElementById('noticeText').textContent='Is section ke letters, memories aur story ka asli content hum baad mein add karenge.'}notice.classList.remove('hidden')}));
+document.querySelectorAll('.section-card').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.section;if(key==='diary'){openDiary();return;}if(key==='photos'){openMediaGallery();return;}if(key==='chats'){openQcChat();return;}else{document.getElementById('noticeTitle').textContent='Yeh kona abhi tayyar ho raha hai ♡';document.getElementById('noticeText').textContent='Is section ke letters, memories aur story ka asli content hum baad mein add karenge.'}notice.classList.remove('hidden')}));
 document.getElementById('noticeClose').addEventListener('click',()=>notice.classList.add('hidden'));notice.addEventListener('click',e=>{if(e.target===notice)notice.classList.add('hidden')});
 function startFloatingHearts(){if(heartInterval)clearInterval(heartInterval);heartInterval=setInterval(()=>{if(!unlocked||document.hidden)return;const decor=document.createElement('span');decor.className='floating-heart';const kinds=[{items:['♡','♥','💗','💜'],cls:'decor-heart',weight:5},{items:['🎈','🎈'],cls:'decor-balloon',weight:2},{items:['🌸','❀','✿'],cls:'decor-petal',weight:2},{items:['✧','✨','✦'],cls:'decor-sparkle',weight:3},{items:['☆','✩','☾'],cls:'decor-star',weight:1}];const pool=kinds.flatMap(k=>Array(k.weight).fill(k));const chosen=pool[Math.floor(Math.random()*pool.length)];decor.classList.add(chosen.cls);decor.textContent=chosen.items[Math.floor(Math.random()*chosen.items.length)];decor.style.left=(Math.random()*94)+'vw';decor.style.fontSize=(chosen.cls==='decor-balloon'?20:13)+Math.random()*(chosen.cls==='decor-balloon'?15:18)+'px';const duration=9+Math.random()*6;decor.style.animationDuration=duration+'s';document.body.appendChild(decor);setTimeout(()=>decor.remove(),duration*1000+500)},850)}
 function checkAutoLock(){if(unlocked&&hiddenAt!==null&&Date.now()-hiddenAt>=AUTO_LOCK_DELAY)lockWebsite();else if(!document.hidden)hiddenAt=null}
@@ -398,4 +419,47 @@ mediaOverlay.addEventListener('click',e=>{if(e.target===mediaOverlay)mediaOverla
 document.addEventListener('keydown',e=>{if(mediaViewer.classList.contains('hidden'))return;if(e.key==='Escape')closeMediaViewer();if(e.key==='ArrowLeft'&&!document.getElementById('viewerPrev').disabled)document.getElementById('viewerPrev').click();if(e.key==='ArrowRight'&&!document.getElementById('viewerNext').disabled)document.getElementById('viewerNext').click()});
 
 </script>
+
+<script>
+const QC_CHAT_PARTICIPANTS=['807c1735-5e4a-4402-843a-61d7767ff043','a16253ac-e839-4abd-8a7a-43643f3a06f3'];
+let qcChatChannel=null,qcChatRows=[],qcChatUser=null;
+const chatOverlay=document.getElementById('chatOverlay'),chatMessages=document.getElementById('chatMessages'),chatStatus=document.getElementById('chatStatus');
+function qcChatEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function qcChatRender(){
+ const term=document.getElementById('chatSearch').value.trim().toLowerCase();
+ const rows=qcChatRows.filter(m=>!m.is_deleted_for_everyone&&(!term||(m.message_text||'').toLowerCase().includes(term)));
+ chatMessages.innerHTML=rows.map(m=>{const mine=m.sender_id===qcChatUser?.id;const when=new Date(m.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});return `<article class="chat-bubble ${mine?'mine':''}"><div>${qcChatEscape(m.message_text)}</div><div class="chat-meta">${m.is_edited?'edited · ':''}${when}${mine?(m.read_at?' · ✓✓ read':m.delivered_at?' · ✓✓ delivered':' · ✓ sent'):''}</div></article>`}).join('');
+ if(!rows.length)chatMessages.innerHTML='<div style="text-align:center;color:#967c6e;padding:30px">No messages yet. Start your little conversation ♡</div>';
+ chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+async function openQcChat(){
+ if(!window.__qcAuthenticated){alert('Pehle login karo.');return}
+ chatOverlay.classList.remove('hidden');chatStatus.textContent='Loading messages…';
+ try{
+  const {data:{user},error:ue}=await qcClient.auth.getUser();if(ue||!user)throw new Error('Login session nahi mili.');
+  if(!QC_CHAT_PARTICIPANTS.includes(user.id))throw new Error('Is private chat ka access allowed nahi hai.');
+  qcChatUser=user;
+  const {data,error}=await qcClient.from('qc_chat_messages').select('*').order('created_at',{ascending:true}).limit(200);
+  if(error)throw error;qcChatRows=data||[];qcChatRender();chatStatus.textContent='Private chat · live updates enabled when available ♡';
+  if(qcChatChannel)await qcClient.removeChannel(qcChatChannel);
+  qcChatChannel=qcClient.channel('qc-private-chat').on('postgres_changes',{event:'*',schema:'public',table:'qc_chat_messages'},payload=>{
+   if(payload.eventType==='INSERT'&&!qcChatRows.some(x=>x.id===payload.new.id))qcChatRows.push(payload.new);
+   else if(payload.eventType==='UPDATE')qcChatRows=qcChatRows.map(x=>x.id===payload.new.id?payload.new:x);
+   else if(payload.eventType==='DELETE')qcChatRows=qcChatRows.filter(x=>x.id!==payload.old.id);
+   qcChatRows.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));qcChatRender();
+  }).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')chatStatus.textContent='Live connection unavailable; refresh chat to reload.'});
+ }catch(e){chatStatus.textContent='Chat setup error: '+(e.message||'Unknown error');chatMessages.innerHTML='<div style="padding:18px;line-height:1.6">Database access check failed. Send this error to ChatGPT: '+qcChatEscape(e.message||'Unknown error')+'</div>'}
+}
+document.getElementById('chatForm').addEventListener('submit',async e=>{
+ e.preventDefault();const input=document.getElementById('chatInput'),message=input.value.trim();if(!message||!qcChatUser)return;
+ const btn=e.submitter;btn.disabled=true;chatStatus.textContent='Sending…';
+ try{const {data,error}=await qcClient.from('qc_chat_messages').insert({sender_id:qcChatUser.id,message_text:message,message_type:'text'}).select().single();if(error)throw error;if(!qcChatRows.some(x=>x.id===data.id))qcChatRows.push(data);input.value='';qcChatRender();chatStatus.textContent='Message sent ♡'}
+ catch(err){chatStatus.textContent='Message not sent: '+(err.message||'Check permissions');}
+ finally{btn.disabled=false;input.focus()}
+});
+document.getElementById('chatSearch').addEventListener('input',qcChatRender);
+document.getElementById('chatClose').addEventListener('click',()=>chatOverlay.classList.add('hidden'));
+chatOverlay.addEventListener('click',e=>{if(e.target===chatOverlay)chatOverlay.classList.add('hidden')});
+</script>
+
 </body></html>
