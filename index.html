@@ -52,6 +52,18 @@
 .diary-edit-form{display:grid;gap:7px;margin-top:12px}.diary-edit-form input,.diary-edit-form textarea{width:100%;padding:9px;border:1px solid #e4c6d5;border-radius:10px;background:#fffafc;color:#69475f;font:14px Georgia,serif}.diary-edit-form textarea{min-height:140px}.diary-edit-form button{min-height:38px;padding:9px 14px;cursor:pointer}.diary-edit-form button[type="submit"]{background:linear-gradient(105deg,#e77da5,#a78bd0);color:#fff;border-color:transparent}.diary-edit-form button:disabled{opacity:.6;cursor:wait}.diary-owner-tools{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:10px}.diary-owner-tools button{border:1px solid #e4c6d5;border-radius:20px;background:#fff5e8;color:#69434c;padding:8px 12px;font:12px Georgia,serif}
 
 
+/* Memory timeline + filters + favourites */
+.media-filters{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px;justify-content:center}
+.media-filter{border:1px solid #ead3df;background:#fff9fc;color:#875d76;border-radius:22px;padding:9px 14px;font:12px Georgia,serif;cursor:pointer;transition:all .2s}
+.media-filter.active,.media-filter:hover{background:#8d5c79;color:#fff;border-color:#8d5c79;box-shadow:0 4px 12px #8d5c7924}
+.media-filter span{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:3px;border-radius:50%;background:#f3e1eb;color:#75465f;font:10px Arial,sans-serif}
+.media-filter.active span{background:#fff;color:#75465f}
+.media-date-heading{grid-column:1/-1;margin:12px 2px 0;padding:8px 0 7px;border-bottom:1px solid #efdce6;color:#8e617b;font:italic 15px Georgia,serif;letter-spacing:.2px}
+.media-card{position:relative}
+.media-favourite{position:absolute;right:8px;top:8px;z-index:2;border:1px solid #ffffffb8;border-radius:50%;width:34px;height:34px;background:#fffdf0e8;color:#a77b8e;font-size:18px;cursor:pointer;box-shadow:0 2px 9px #44223322}
+.media-favourite.is-favourite{background:#fff0f4;color:#df426e}
+.media-favourite:focus-visible,.media-filter:focus-visible{outline:2px solid #9a6283;outline-offset:2px}
+.media-no-results{grid-column:1/-1;text-align:center;padding:26px 12px;color:#9a7d91;font:italic 14px Georgia,serif}
 /* Photos & Videos — mobile-first gallery */
 #mediaOverlay{position:fixed;inset:0;z-index:35;overflow:auto;padding:clamp(14px,4vw,34px);background:radial-gradient(ellipse at 8% 5%,#fbe0eb,transparent 35%),radial-gradient(ellipse at 90% 90%,#e4d9fb,transparent 38%),#fff9fc}
 .media-shell{max-width:1100px;margin:0 auto;min-height:100%;padding-bottom:28px}
@@ -108,6 +120,12 @@
       <label class="media-add" id="mediaAddLabel">＋ Add photos / videos<input id="mediaUploadInput" type="file" accept="image/*,video/*" multiple hidden></label>
       <span id="mediaPermission" class="media-permission">Dono accounts add kar sakte hain · Delete sirf owner</span>
     </div>
+    <nav class="media-filters" aria-label="Filter memories">
+      <button type="button" class="media-filter active" data-media-filter="all">All Memories</button>
+      <button type="button" class="media-filter" data-media-filter="photo">📸 Photos</button>
+      <button type="button" class="media-filter" data-media-filter="video">🎬 Videos</button>
+      <button type="button" class="media-filter" data-media-filter="favourite">❤️ Favourites <span id="mediaFavouriteCount">0</span></button>
+    </nav>
     <div id="mediaStatus" role="status"></div>
     <div id="mediaGrid" class="media-grid"></div>
     <div id="mediaEmpty" class="media-empty hidden"><span>♡</span><h3>Abhi yahan koi yaad nahi</h3><p>First photo ya video add karke is jagah ko apna banao.</p></div>
@@ -307,7 +325,7 @@ async function openMediaGallery(){
   const {data,error}=await qcClient.storage.from(QC_MEDIA_BUCKET).list('',{limit:500,sortBy:{column:'created_at',order:'desc'}});
   if(error)throw error;
   qcMediaItems=(data||[]).filter(x=>x.name&&!x.name.startsWith('.')).map(x=>({name:x.name,created_at:x.created_at||null,metadata:x.metadata||{},id:x.id||x.name}));
-  await renderMediaGrid();mediaSay(qcMediaItems.length?`${qcMediaItems.length} memories · kisi par tap karo full-screen dekhne ke liye.`:'');
+  await renderMediaGrid();mediaSay(qcMediaItems.length?`${qcMediaItems.length} memories · date-wise arranged. Heart se favourites save karo.`:'');
   document.getElementById('mediaEmpty').classList.toggle('hidden',qcMediaItems.length>0);
  }catch(e){mediaSay('Gallery load nahi hui. Supabase bucket/policies check karo. '+(e.message||''));mediaGrid.innerHTML='';document.getElementById('mediaEmpty').classList.add('hidden')}
 }
@@ -315,19 +333,33 @@ async function mediaUrl(item){
  const {data,error}=await qcClient.storage.from(QC_MEDIA_BUCKET).createSignedUrl(item.name,3600);
  if(error)throw error;return data.signedUrl;
 }
-async function renderMediaGrid(){
- mediaGrid.innerHTML='';qcMediaUrls=[];
- for(let i=0;i<qcMediaItems.length;i++){
-  const item=qcMediaItems[i],mime=item.metadata?.mimetype||item.metadata?.contentType||'';
-  const isVideo=/video/i.test(mime)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(item.name);
+let qcMediaFilter='all';
+const QC_FAVOURITES_KEY='qc_media_favourites_v1';
+function qcGetFavourites(){try{return new Set(JSON.parse(localStorage.getItem(QC_FAVOURITES_KEY)||'[]'))}catch(e){return new Set()}}
+function qcSaveFavourites(set){try{localStorage.setItem(QC_FAVOURITES_KEY,JSON.stringify([...set]))}catch(e){mediaSay('Favourite save nahi ho paya. Browser storage check karo.')}}
+function qcMediaKey(item){return item.name}
+function qcMediaIsVideo(item){const mime=item.metadata?.mimetype||item.metadata?.contentType||'';return /video/i.test(mime)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(item.name)}
+function qcMediaDate(item){const d=item.created_at?new Date(item.created_at):null;return d&&!Number.isNaN(d.getTime())?d:null}
+function qcDateLabel(item){const d=qcMediaDate(item);return d?d.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'Date not available'}
+function qcVisibleMedia(){const fav=qcGetFavourites();return qcMediaItems.filter(item=>{const video=qcMediaIsVideo(item);if(qcMediaFilter==='photo'&&video)return false;if(qcMediaFilter==='video'&&!video)return false;if(qcMediaFilter==='favourite'&&!fav.has(qcMediaKey(item)))return false;return true})}
+function qcUpdateFavouriteCount(){const el=document.getElementById('mediaFavouriteCount');if(el)el.textContent=qcMediaItems.filter(x=>qcGetFavourites().has(qcMediaKey(x))).length}
+document.querySelectorAll('[data-media-filter]').forEach(btn=>btn.addEventListener('click',()=>{qcMediaFilter=btn.dataset.mediaFilter;document.querySelectorAll('[data-media-filter]').forEach(b=>b.classList.toggle('active',b===btn));renderMediaGrid()}));
+function renderMediaGrid(){
+ mediaGrid.innerHTML='';qcMediaUrls=[];const visible=qcVisibleMedia(),favourites=qcGetFavourites();qcUpdateFavouriteCount();
+ if(!visible.length){const empty=document.createElement('div');empty.className='media-no-results';empty.textContent=qcMediaItems.length?'Is filter mein abhi koi memory nahi ♡':'Abhi yahan koi yaad nahi';mediaGrid.appendChild(empty);return}
+ let lastDate='';
+ for(let i=0;i<visible.length;i++){
+  const item=visible[i],isVideo=qcMediaIsVideo(item),dateKey=qcMediaDate(item)?qcMediaDate(item).toISOString().slice(0,10):'unknown';
+  if(dateKey!==lastDate){const heading=document.createElement('h3');heading.className='media-date-heading';heading.textContent=qcDateLabel(item);mediaGrid.appendChild(heading);lastDate=dateKey}
   const card=document.createElement('article');card.className='media-card';
   const thumb=document.createElement('div');thumb.className=isVideo?'media-video-thumb':'';
-  if(isVideo){thumb.textContent='▶';thumb.setAttribute('aria-label','Video');}
-  else{thumb.className='';thumb.style.cssText='width:100%;aspect-ratio:1/1;background:#f5e9ef';const img=document.createElement('img');img.className='media-thumb';img.alt='Photo memory';try{img.src=await mediaUrl(item)}catch(e){img.alt='Preview unavailable';img.src=''}thumb.appendChild(img)}
-  const kind=document.createElement('span');kind.className='media-kind';kind.textContent=isVideo?'▶ VIDEO':'♡ PHOTO';card.appendChild(thumb);card.appendChild(kind);
-  const cap=document.createElement('div');cap.className='media-card-caption';cap.textContent=item.name.replace(/^\d+_/, '').replace(/^\d{13}-/,'');card.appendChild(cap);
-  if(mediaIsOwner()){const del=document.createElement('button');del.className='media-delete';del.type='button';del.title='Delete memory';del.textContent='×';del.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('Is photo/video ko permanently delete karna hai?'))return;del.disabled=true;const {error}=await qcClient.storage.from(QC_MEDIA_BUCKET).remove([item.name]);if(error){mediaSay('Delete fail hua: '+error.message);del.disabled=false}else{await openMediaGallery()}});card.appendChild(del)}
-  card.addEventListener('click',()=>openMediaViewer(i));mediaGrid.appendChild(card);
+  if(isVideo){thumb.textContent='▶';thumb.setAttribute('aria-label','Video')}
+  else{thumb.className='';thumb.style.cssText='width:100%;aspect-ratio:1/1;background:#f5e9ef';const img=document.createElement('img');img.className='media-thumb';img.alt='Photo memory';img.loading='lazy';mediaUrl(item).then(url=>{img.src=url}).catch(()=>{img.alt='Preview unavailable'});thumb.appendChild(img)}
+  card.appendChild(thumb);const kind=document.createElement('span');kind.className='media-kind';kind.textContent=isVideo?'▶ VIDEO':'♡ PHOTO';card.appendChild(kind);
+  const favBtn=document.createElement('button');favBtn.type='button';favBtn.className='media-favourite'+(favourites.has(qcMediaKey(item))?' is-favourite':'');favBtn.textContent=favourites.has(qcMediaKey(item))?'♥':'♡';favBtn.title=favourites.has(qcMediaKey(item))?'Remove from favourites':'Add to favourites';favBtn.setAttribute('aria-label',favBtn.title);favBtn.addEventListener('click',e=>{e.stopPropagation();const set=qcGetFavourites(),key=qcMediaKey(item);if(set.has(key))set.delete(key);else set.add(key);qcSaveFavourites(set);renderMediaGrid()});card.appendChild(favBtn);
+  const cap=document.createElement('div');cap.className='media-card-caption';cap.textContent=item.name.replace(/^\d+_/,'').replace(/^\d{13}-/,'');card.appendChild(cap);
+  if(mediaIsOwner()){const del=document.createElement('button');del.className='media-delete';del.type='button';del.title='Delete memory';del.textContent='×';del.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('Is photo/video ko permanently delete karna hai?'))return;del.disabled=true;const {error}=await qcClient.storage.from(QC_MEDIA_BUCKET).remove([item.name]);if(error){mediaSay('Delete fail hua: '+error.message);del.disabled=false}else{const set=qcGetFavourites();set.delete(qcMediaKey(item));qcSaveFavourites(set);await openMediaGallery()}});card.appendChild(del)}
+  card.addEventListener('click',()=>openMediaViewer(qcMediaItems.findIndex(x=>x.name===item.name)));mediaGrid.appendChild(card)
  }
 }
 document.getElementById('mediaUploadInput').addEventListener('change',async e=>{
