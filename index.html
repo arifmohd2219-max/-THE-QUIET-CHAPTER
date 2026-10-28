@@ -157,21 +157,21 @@
 
 <style>
 #chatOverlay{position:fixed;inset:0;z-index:40;background:#f8efe6;color:#543c32;display:flex;align-items:center;justify-content:center;padding:12px;font-family:Arial,sans-serif}
-.chat-shell{width:min(100%,850px);height:min(94vh,900px);background:#fffaf4;border:1px solid #e5d1c0;border-radius:22px;box-shadow:0 18px 60px #543c3220;display:flex;flex-direction:column;overflow:hidden}
-.chat-head{padding:16px 18px;background:#ead8c8;display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-head h2{font:normal 23px Georgia,serif}.chat-sub{font-size:12px;color:#84685a;margin-top:4px}.chat-btn{border:1px solid #d8bdab;background:#fff8f1;color:#694c3e;border-radius:18px;padding:8px 12px;cursor:pointer}
-#chatSearch{margin:10px 12px 0;padding:10px;border:1px solid #e5d1c0;border-radius:12px;background:white}
-#chatMessages{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:9px;background:linear-gradient(#fbf4ed,#f8eee5)}
-.chat-bubble{max-width:82%;padding:10px 12px;border-radius:15px;background:white;border:1px solid #ead8c8;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap}
-.chat-bubble.mine{align-self:flex-end;background:#f0dfd2}.chat-meta{font-size:10px;color:#967c6e;margin-top:6px;text-align:right}.chat-compose{display:flex;gap:7px;padding:12px;border-top:1px solid #ead8c8;background:#fffaf4}.chat-compose textarea{resize:none;min-width:0;flex:1;border:1px solid #e0caba;border-radius:13px;padding:11px;background:white;color:#543c32;font:14px Arial}.chat-status{padding:4px 13px;font-size:12px;color:#967c6e;min-height:23px}
-@media(max-width:520px){.chat-shell{height:96vh;border-radius:16px}.chat-head h2{font-size:20px}.chat-bubble{max-width:90%}}
+.chat-shell{width:min(100%,900px);height:min(94vh,920px);background:#fffaf4;border:1px solid #e5d1c0;border-radius:22px;box-shadow:0 18px 60px #543c3220;display:flex;flex-direction:column;overflow:hidden}
+.chat-head{padding:13px 16px;background:#ead8c8;display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-head h2{font:normal 23px Georgia,serif;margin:0}.chat-sub{font-size:12px;color:#84685a;margin-top:4px}.chat-btn,.chat-tool{border:1px solid #d8bdab;background:#fff8f1;color:#694c3e;border-radius:18px;padding:8px 12px;cursor:pointer}.chat-tools{display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;background:#fff8f1}.chat-tools button{font-size:12px}.chat-search-wrap{display:flex;gap:6px;padding:0 12px 6px;background:#fff8f1}#chatSearch{flex:1;min-width:0;padding:10px;border:1px solid #e5d1c0;border-radius:12px;background:white}
+#chatMessages{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(#fbf4ed,#f8eee5)}
+.chat-date{align-self:center;font-size:11px;color:#896f60;background:#fffaf4;border:1px solid #ead8c8;padding:5px 10px;border-radius:12px;margin:7px 0}.chat-bubble{position:relative;max-width:82%;padding:10px 12px;border-radius:15px;background:white;border:1px solid #ead8c8;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap}.chat-bubble.mine{align-self:flex-end;background:#f0dfd2}.chat-meta{font-size:10px;color:#967c6e;margin-top:6px;text-align:right}.chat-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.chat-actions button{border:1px solid #ddc8b9;border-radius:10px;background:#fffaf5;color:#785849;font-size:11px;padding:4px 7px;cursor:pointer}.chat-reply-preview{border-left:3px solid #b78380;background:#f8e9e5;padding:6px 8px;margin-bottom:7px;border-radius:4px;font-size:12px;color:#76574f}.chat-pinned{font-size:11px;color:#9b6c68;margin-bottom:5px}.chat-compose{display:flex;gap:7px;padding:10px;border-top:1px solid #ead8c8;background:#fffaf4;align-items:end}.chat-compose textarea{resize:none;min-width:0;flex:1;border:1px solid #e0caba;border-radius:13px;padding:11px;background:white;color:#543c32;font:14px Arial;max-height:110px}.chat-status{padding:4px 13px;font-size:12px;color:#967c6e;min-height:23px}.chat-replybar{display:flex;align-items:center;justify-content:space-between;padding:7px 13px;background:#f5e4df;color:#79564d;font-size:12px}.chat-compose button:disabled{opacity:.5}.chat-file{display:none}.chat-media{max-width:min(260px,65vw);max-height:260px;border-radius:10px;display:block;margin-top:5px}.chat-voice{max-width:250px;width:100%;margin-top:5px}
+@media(max-width:520px){.chat-shell{height:96vh;border-radius:16px}.chat-head h2{font-size:20px}.chat-bubble{max-width:90%}.chat-compose{padding:8px}.chat-tools{gap:4px}.chat-tools button{padding:7px}}
 </style>
 <div id="chatOverlay" class="hidden" role="dialog" aria-modal="true" aria-label="Private chat">
  <section class="chat-shell">
-  <header class="chat-head"><div><h2>Our Little Chat ♡</h2><div class="chat-sub">A private corner for two</div></div><button id="chatClose" class="chat-btn">Close ✕</button></header>
-  <input id="chatSearch" placeholder="Search messages…" aria-label="Search messages">
+  <header class="chat-head"><div><h2>Our Little Chat ♡</h2><div class="chat-sub" id="chatPresence">A private corner for two · online status not yet configured</div></div><button id="chatClose" class="chat-btn" type="button">Close ✕</button></header>
+  <div class="chat-tools"><button class="chat-tool" id="chatPinnedBtn" type="button">📌 Pinned</button><button class="chat-tool" id="chatAttachBtn" type="button">＋ Photo/video</button><button class="chat-tool" id="chatVoiceBtn" type="button">🎙 Record voice</button><input class="chat-file" id="chatFileInput" type="file" accept="image/*,video/*"></div>
+  <div class="chat-search-wrap"><input id="chatSearch" placeholder="Search messages…" aria-label="Search messages"></div>
   <div id="chatStatus" class="chat-status">Connecting…</div>
+  <div id="chatReplyBar" class="chat-replybar hidden"><span id="chatReplyText">Replying…</span><button class="chat-tool" id="chatReplyCancel" type="button">Cancel ×</button></div>
   <div id="chatMessages" aria-live="polite"></div>
-  <form id="chatForm" class="chat-compose"><textarea id="chatInput" rows="1" maxlength="5000" placeholder="Write something…"></textarea><button class="chat-btn" type="submit">Send ♡</button></form>
+  <form id="chatForm" class="chat-compose"><button class="chat-btn" id="chatEmojiBtn" type="button" title="Add heart">♡</button><textarea id="chatInput" rows="1" maxlength="5000" placeholder="Write something…"></textarea><button class="chat-btn" type="submit">Send ♡</button></form>
  </section>
 </div>
 
@@ -422,44 +422,48 @@ document.addEventListener('keydown',e=>{if(mediaViewer.classList.contains('hidde
 
 <script>
 const QC_CHAT_PARTICIPANTS=['807c1735-5e4a-4402-843a-61d7767ff043','a16253ac-e839-4abd-8a7a-43643f3a06f3'];
-let qcChatChannel=null,qcChatRows=[],qcChatUser=null;
+const QC_CHAT_OWNER='807c1735-5e4a-4402-843a-61d7767ff043',QC_CHAT_BUCKET='private-memories';
+let qcChatChannel=null,qcChatRows=[],qcChatUser=null,qcChatReplyTo=null,qcChatRecording=null,qcChatRecorder=null,qcChatChunks=[];
 const chatOverlay=document.getElementById('chatOverlay'),chatMessages=document.getElementById('chatMessages'),chatStatus=document.getElementById('chatStatus');
 function qcChatEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function qcChatMine(m){return !!qcChatUser&&m.sender_id===qcChatUser.id}
+function qcChatDateLabel(d){const date=new Date(d),now=new Date(),y=new Date();y.setDate(now.getDate()-1);if(date.toDateString()===now.toDateString())return 'Today';if(date.toDateString()===y.toDateString())return 'Yesterday';return date.toLocaleDateString([], {day:'numeric',month:'long',year:'numeric'})}
 function qcChatRender(){
- const term=document.getElementById('chatSearch').value.trim().toLowerCase();
- const rows=qcChatRows.filter(m=>!m.is_deleted_for_everyone&&(!term||(m.message_text||'').toLowerCase().includes(term)));
- chatMessages.innerHTML=rows.map(m=>{const mine=m.sender_id===qcChatUser?.id;const when=new Date(m.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});return `<article class="chat-bubble ${mine?'mine':''}"><div>${qcChatEscape(m.message_text)}</div><div class="chat-meta">${m.is_edited?'edited · ':''}${when}${mine?(m.read_at?' · ✓✓ read':m.delivered_at?' · ✓✓ delivered':' · ✓ sent'):''}</div></article>`}).join('');
- if(!rows.length)chatMessages.innerHTML='<div style="text-align:center;color:#967c6e;padding:30px">No messages yet. Start your little conversation ♡</div>';
- chatMessages.scrollTop=chatMessages.scrollHeight;
+ const term=document.getElementById('chatSearch').value.trim().toLowerCase(),pinnedOnly=document.getElementById('chatPinnedBtn').dataset.only==='1';
+ const rows=qcChatRows.filter(m=>!m.is_deleted_for_everyone&&(!term||(m.message_text||'').toLowerCase().includes(term))&&(!pinnedOnly||m.is_pinned));
+ let lastDay='';
+ chatMessages.innerHTML=rows.map(m=>{const mine=qcChatMine(m),day=qcChatDateLabel(m.created_at),when=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});let dateSep='';if(day!==lastDay){dateSep=`<div class="chat-date">${qcChatEscape(day)}</div>`;lastDay=day}const parent=m.reply_to?qcChatRows.find(x=>x.id===m.reply_to):null;let content=qcChatEscape(m.message_text||'');if(m.message_type==='image'&&m.media_path)content=`${content}<img class="chat-media" src="${qcChatEscape(m.media_url||'')}" alt="Shared photo">`;else if(m.message_type==='video'&&m.media_path)content=`${content}<video class="chat-media" controls playsinline src="${qcChatEscape(m.media_url||'')}"></video>`;else if(m.message_type==='voice'&&m.media_path)content=`<audio class="chat-voice" controls src="${qcChatEscape(m.media_url||'')}"></audio>`;return `${dateSep}<article class="chat-bubble ${mine?'mine':''}" data-id="${m.id}">${m.is_pinned?'<div class="chat-pinned">📌 Pinned</div>':''}${parent?`<div class="chat-reply-preview">↩ ${qcChatEscape((parent.message_text||'Media message').slice(0,140))}</div>`:''}<div>${content||'<i>Media message</i>'}</div><div class="chat-meta">${m.is_edited?'edited · ':''}${when}${mine?(m.read_at?' · ✓✓ read':m.delivered_at?' · ✓✓ delivered':' · ✓ sent'):''}</div><div class="chat-actions"><button data-act="reply" data-id="${m.id}">↩ Reply</button><button data-act="react" data-id="${m.id}">♡ React</button><button data-act="pin" data-id="${m.id}">${m.is_pinned?'Unpin':'📌 Pin'}</button><button data-act="copy" data-id="${m.id}">Copy</button>${mine?'<button data-act="edit" data-id="'+m.id+'">Edit</button>':''}${qcChatUser&&qcChatUser.id===QC_CHAT_OWNER?'<button data-act="delete" data-id="'+m.id+'">Delete</button>':''}</div></article>`}).join('');
+ if(!rows.length)chatMessages.innerHTML='<div style="text-align:center;color:#967c6e;padding:30px">No messages here yet. Start your little conversation ♡</div>';chatMessages.scrollTop=chatMessages.scrollHeight;
 }
+function qcChatSetReply(m){qcChatReplyTo=m;document.getElementById('chatReplyBar').classList.toggle('hidden',!m);document.getElementById('chatReplyText').textContent=m?'Replying to: '+((m.message_text||'Media message').slice(0,100)):'Replying…';document.getElementById('chatInput').focus()}
+async function qcChatSignedUrl(path){const {data,error}=await qcClient.storage.from(QC_CHAT_BUCKET).createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
 async function openQcChat(){
- if(!window.__qcAuthenticated){alert('Pehle login karo.');return}
- chatOverlay.classList.remove('hidden');chatStatus.textContent='Loading messages…';
- try{
-  const {data:{user},error:ue}=await qcClient.auth.getUser();if(ue||!user)throw new Error('Login session nahi mili.');
-  if(!QC_CHAT_PARTICIPANTS.includes(user.id))throw new Error('Is private chat ka access allowed nahi hai.');
-  qcChatUser=user;
-  const {data,error}=await qcClient.from('qc_chat_messages').select('*').order('created_at',{ascending:true}).limit(200);
-  if(error)throw error;qcChatRows=data||[];qcChatRender();chatStatus.textContent='Private chat · live updates enabled when available ♡';
-  if(qcChatChannel)await qcClient.removeChannel(qcChatChannel);
-  qcChatChannel=qcClient.channel('qc-private-chat').on('postgres_changes',{event:'*',schema:'public',table:'qc_chat_messages'},payload=>{
-   if(payload.eventType==='INSERT'&&!qcChatRows.some(x=>x.id===payload.new.id))qcChatRows.push(payload.new);
-   else if(payload.eventType==='UPDATE')qcChatRows=qcChatRows.map(x=>x.id===payload.new.id?payload.new:x);
-   else if(payload.eventType==='DELETE')qcChatRows=qcChatRows.filter(x=>x.id!==payload.old.id);
-   qcChatRows.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));qcChatRender();
-  }).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')chatStatus.textContent='Live connection unavailable; refresh chat to reload.'});
- }catch(e){chatStatus.textContent='Chat setup error: '+(e.message||'Unknown error');chatMessages.innerHTML='<div style="padding:18px;line-height:1.6">Database access check failed. Send this error to ChatGPT: '+qcChatEscape(e.message||'Unknown error')+'</div>'}
+ if(!window.__qcAuthenticated){alert('Pehle login karo.');return}chatOverlay.classList.remove('hidden');chatStatus.textContent='Loading messages…';
+ try{const {data:{user},error:ue}=await qcClient.auth.getUser();if(ue||!user)throw new Error('Login session nahi mili.');if(!QC_CHAT_PARTICIPANTS.includes(user.id))throw new Error('Is private chat ka access allowed nahi hai.');qcChatUser=user;
+ const {data,error}=await qcClient.from('qc_chat_messages').select('*').order('created_at',{ascending:true}).limit(300);if(error)throw error;qcChatRows=data||[];
+ for(const m of qcChatRows){if(m.media_path){try{m.media_url=await qcChatSignedUrl(m.media_path)}catch(e){m.media_url=''}}}qcChatRender();chatStatus.textContent='Private chat · realtime connected when available ♡';
+ if(qcChatChannel)await qcClient.removeChannel(qcChatChannel);qcChatChannel=qcClient.channel('qc-private-chat').on('postgres_changes',{event:'*',schema:'public',table:'qc_chat_messages'},async payload=>{if(payload.eventType==='INSERT'&&!qcChatRows.some(x=>x.id===payload.new.id)){const row=payload.new;if(row.media_path){try{row.media_url=await qcChatSignedUrl(row.media_path)}catch(e){row.media_url=''}}qcChatRows.push(row)}else if(payload.eventType==='UPDATE')qcChatRows=qcChatRows.map(x=>x.id===payload.new.id?{...payload.new,media_url:x.media_url}:x);else if(payload.eventType==='DELETE')qcChatRows=qcChatRows.filter(x=>x.id!==payload.old.id);qcChatRows.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));qcChatRender()}).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')chatStatus.textContent='Live connection unavailable; refresh chat to reload.'});
+ }catch(e){chatStatus.textContent='Chat setup error: '+(e.message||'Unknown error');chatMessages.innerHTML='<div style="padding:18px;line-height:1.6">Database access check failed: '+qcChatEscape(e.message||'Unknown error')+'</div>'}
 }
-document.getElementById('chatForm').addEventListener('submit',async e=>{
- e.preventDefault();const input=document.getElementById('chatInput'),message=input.value.trim();if(!message||!qcChatUser)return;
- const btn=e.submitter;btn.disabled=true;chatStatus.textContent='Sending…';
- try{const {data,error}=await qcClient.from('qc_chat_messages').insert({sender_id:qcChatUser.id,message_text:message,message_type:'text'}).select().single();if(error)throw error;if(!qcChatRows.some(x=>x.id===data.id))qcChatRows.push(data);input.value='';qcChatRender();chatStatus.textContent='Message sent ♡'}
- catch(err){chatStatus.textContent='Message not sent: '+(err.message||'Check permissions');}
- finally{btn.disabled=false;input.focus()}
-});
+async function qcChatSend(message,type='text',mediaPath=null){if(!qcChatUser)throw new Error('Login session nahi mili.');const payload={sender_id:qcChatUser.id,message_text:message||'',message_type:type,media_path:mediaPath,reply_to:qcChatReplyTo?.id||null};const {data,error}=await qcClient.from('qc_chat_messages').insert(payload).select().single();if(error)throw error;if(!qcChatRows.some(x=>x.id===data.id))qcChatRows.push(data);qcChatReplyTo=null;document.getElementById('chatReplyBar').classList.add('hidden');qcChatRender()}
+document.getElementById('chatForm').addEventListener('submit',async e=>{e.preventDefault();const input=document.getElementById('chatInput'),message=input.value.trim(),btn=e.submitter;if(!message||!qcChatUser)return;btn.disabled=true;chatStatus.textContent='Sending…';try{await qcChatSend(message);input.value='';chatStatus.textContent='Message sent ♡'}catch(err){chatStatus.textContent='Message not sent: '+(err.message||'Check permissions')}finally{btn.disabled=false;input.focus()}});
 document.getElementById('chatSearch').addEventListener('input',qcChatRender);
-document.getElementById('chatClose').addEventListener('click',()=>chatOverlay.classList.add('hidden'));
-chatOverlay.addEventListener('click',e=>{if(e.target===chatOverlay)chatOverlay.classList.add('hidden')});
+document.getElementById('chatClose').addEventListener('click',()=>chatOverlay.classList.add('hidden'));chatOverlay.addEventListener('click',e=>{if(e.target===chatOverlay)chatOverlay.classList.add('hidden')});
+document.getElementById('chatReplyCancel').addEventListener('click',()=>qcChatSetReply(null));
+document.getElementById('chatEmojiBtn').addEventListener('click',()=>{const input=document.getElementById('chatInput');input.value+='♡';input.focus()});
+document.getElementById('chatPinnedBtn').addEventListener('click',e=>{const b=e.currentTarget;b.dataset.only=b.dataset.only==='1'?'0':'1';b.textContent=b.dataset.only==='1'?'📌 Show all':'📌 Pinned';qcChatRender()});
+chatMessages.addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;const m=qcChatRows.find(x=>x.id===b.dataset.id);if(!m)return;const act=b.dataset.act;try{
+ if(act==='reply'){qcChatSetReply(m);return}if(act==='copy'){await navigator.clipboard.writeText(m.message_text||m.media_path||'');chatStatus.textContent='Copied ♡';return}
+ if(act==='react'){const emoji=prompt('Reaction emoji enter karo (e.g. ❤️ 😂 🥹)');if(!emoji)return;const {error}=await qcClient.from('qc_chat_reactions').insert({message_id:m.id,user_id:qcChatUser.id,emoji});if(error)throw error;chatStatus.textContent='Reaction saved ♡';return}
+ if(act==='pin'){const {error}=await qcClient.from('qc_chat_messages').update({is_pinned:!m.is_pinned}).eq('id',m.id);if(error)throw error;m.is_pinned=!m.is_pinned;qcChatRender();return}
+ if(act==='edit'){if(!qcChatMine(m))return;const next=prompt('Edit message:',m.message_text||'');if(next===null||!next.trim())return;const {error}=await qcClient.from('qc_chat_messages').update({message_text:next.trim(),is_edited:true,updated_at:new Date().toISOString()}).eq('id',m.id);if(error)throw error;m.message_text=next.trim();m.is_edited=true;qcChatRender();return}
+ if(act==='delete'){if(qcChatUser.id!==QC_CHAT_OWNER){alert('Delete control sirf owner ke paas hai.');return}const choice=confirm('OK = Delete for everyone. Cancel = keep message.');if(!choice)return;const {error}=await qcClient.from('qc_chat_messages').update({is_deleted_for_everyone:true,message_text:'This message was deleted.'}).eq('id',m.id);if(error)throw error;m.is_deleted_for_everyone=true;m.message_text='This message was deleted.';qcChatRender();return}
+ }catch(err){chatStatus.textContent='Action failed: '+(err.message||'Check database policies')}
+});
+document.getElementById('chatAttachBtn').addEventListener('click',()=>document.getElementById('chatFileInput').click());
+document.getElementById('chatFileInput').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;if(!qcChatUser){chatStatus.textContent='Pehle login karo.';return}if(!/^image\/|^video\//i.test(file.type)){chatStatus.textContent='Photo ya video select karo.';e.target.value='';return}if(file.size>100*1024*1024){chatStatus.textContent='Maximum file size 100 MB hai.';e.target.value='';return}chatStatus.textContent='Media upload ho rahi hai…';try{const path=`chat/${qcChatUser.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;const {error}=await qcClient.storage.from(QC_CHAT_BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;await qcChatSend(file.name,file.type.startsWith('video/')?'video':'image',path);chatStatus.textContent='Media sent ♡'}catch(err){chatStatus.textContent='Media upload failed: '+err.message+' · bucket permissions check karo'}finally{e.target.value=''}});
+document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qcChatRecorder&&qcChatRecorder.state==='recording'){qcChatRecorder.stop();document.getElementById('chatVoiceBtn').textContent='🎙 Record voice';return}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});qcChatChunks=[];qcChatRecorder=new MediaRecorder(stream);qcChatRecorder.ondataavailable=e=>{if(e.data.size)qcChatChunks.push(e.data)};qcChatRecorder.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(qcChatChunks,{type:qcChatRecorder.mimeType||'audio/webm'});if(!blob.size)return;const url=URL.createObjectURL(blob);const send=confirm('Voice recording ready. OK = send, Cancel = discard.');if(!send){URL.revokeObjectURL(url);chatStatus.textContent='Voice recording discarded.';return}try{const path=`chat/${qcChatUser.id}/${Date.now()}_voice.webm`;const {error}=await qcClient.storage.from(QC_CHAT_BUCKET).upload(path,blob,{upsert:false,contentType:blob.type});if(error)throw error;await qcChatSend('Voice message','voice',path);chatStatus.textContent='Voice message sent ♡'}catch(err){chatStatus.textContent='Voice upload failed: '+err.message+' · bucket permissions check karo'}URL.revokeObjectURL(url)};qcChatRecorder.start();document.getElementById('chatVoiceBtn').textContent='■ Stop recording';chatStatus.textContent='Recording… click Stop when finished.'}catch(err){chatStatus.textContent='Microphone unavailable: '+err.message}});
+
 </script>
 
 </body></html>
