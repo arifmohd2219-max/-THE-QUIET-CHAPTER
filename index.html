@@ -236,7 +236,7 @@ document.getElementById('diaryAddForm').addEventListener('submit',async e=>{
   // page_order is an INTEGER in Supabase: never insert fractional values such as 2.5.
   // Insert at the end first, then move it to the intended position using integer ordering.
   const currentVirtual=diaryVirtualPages()[Math.max(0,qcDiaryIndex-1)];
-  const maxOrder=qcDiaryPages.reduce((m,p)=>Math.max(m,Number(p.page_order)||0),0);
+  const maxOrder=qcDiaryPages.reduce((m,p)=>Math.max(m,Math.ceil(Number(p.page_order)||0)),0);
   const {data:newRow,error:insertErr}=await qcClient.from('qc_diary_pages').insert({title,body,page_order:maxOrder+1,author_id:qcDiaryUser.id}).select('id,title,body,page_order,created_at,author_id').single();
   if(insertErr)throw insertErr;
   const {data:rows,error:readErr}=await qcClient.from('qc_diary_pages').select('id,page_order,created_at').order('page_order',{ascending:true}).order('created_at',{ascending:true});
@@ -256,11 +256,12 @@ document.getElementById('diaryAddForm').addEventListener('submit',async e=>{
   }
   document.getElementById('diaryNewTitle').value='';document.getElementById('diaryNewBody').value='';
   await openDiary();const added=qcDiaryPages.findIndex(p=>p.id===newRow.id);qcDiaryIndex=Math.max(1,added+1);renderDiary();diarySay('New page sahi jagah add ho gaya ♡');
- }catch(err){diarySay('Page add nahi hua: '+(err.message||'Supabase permissions/schema check karo.'))}finally{btn.disabled=false}
+ }catch(err){diarySay('Page add nahi hua: '+(err.message||'Supabase permissions/schema check karo.')+' Purane fractional page_order values ko normalize karna zaroori ho sakta hai.')}finally{btn.disabled=false}
 });
 document.addEventListener('keydown',e=>{if(diaryOverlay.classList.contains('hidden'))return;if(e.key==='Escape')diaryOverlay.classList.add('hidden');if(e.key==='ArrowRight')document.getElementById('diaryNext').click();if(e.key==='ArrowLeft')document.getElementById('diaryPrev').click()});
 </script>
 
+<script>
 /* Shared Photos & Videos gallery. Both approved accounts may upload; only QC_OWNER_UID may delete.
    Actual access control must also be enforced by Supabase Storage RLS policies. */
 const QC_MEDIA_BUCKET='private-memories';
