@@ -162,10 +162,37 @@
 #chatMessages{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(#fbf4ed,#f8eee5)}
 .chat-date{align-self:center;font-size:11px;color:#896f60;background:#fffaf4;border:1px solid #ead8c8;padding:5px 10px;border-radius:12px;margin:7px 0}.chat-bubble{position:relative;max-width:82%;padding:10px 12px;border-radius:15px;background:white;border:1px solid #ead8c8;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap}.chat-bubble.mine{align-self:flex-end;background:#f0dfd2}.chat-meta{font-size:10px;color:#967c6e;margin-top:6px;text-align:right}.chat-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.chat-actions button{border:1px solid #ddc8b9;border-radius:10px;background:#fffaf5;color:#785849;font-size:11px;padding:4px 7px;cursor:pointer}.chat-reply-preview{border-left:3px solid #b78380;background:#f8e9e5;padding:6px 8px;margin-bottom:7px;border-radius:4px;font-size:12px;color:#76574f}.chat-pinned{font-size:11px;color:#9b6c68;margin-bottom:5px}.chat-compose{display:flex;gap:7px;padding:10px;border-top:1px solid #ead8c8;background:#fffaf4;align-items:end}.chat-compose textarea{resize:none;min-width:0;flex:1;border:1px solid #e0caba;border-radius:13px;padding:11px;background:white;color:#543c32;font:14px Arial;max-height:110px}.chat-status{padding:4px 13px;font-size:12px;color:#967c6e;min-height:23px}.chat-replybar{display:flex;align-items:center;justify-content:space-between;padding:7px 13px;background:#f5e4df;color:#79564d;font-size:12px}.chat-compose button:disabled{opacity:.5}.chat-file{display:none}.chat-media{max-width:min(260px,65vw);max-height:260px;border-radius:10px;display:block;margin-top:5px}.chat-voice{max-width:250px;width:100%;margin-top:5px}
 @media(max-width:520px){.chat-shell{height:96vh;border-radius:16px}.chat-head h2{font-size:20px}.chat-bubble{max-width:90%}.chat-compose{padding:8px}.chat-tools{gap:4px}.chat-tools button{padding:7px}}
+
+/* Mobile-first polish: full-height chat, floral wallpaper, compact composer */
+#chatOverlay{padding:0;background:#f8eee7}
+.chat-shell{width:100%;height:100%;height:100dvh;max-height:none;border-radius:0;border:0;box-shadow:none;background:#fff9f2;min-width:0}
+.chat-head{padding:calc(10px + env(safe-area-inset-top)) 13px 11px;background:linear-gradient(135deg,#ead6c4,#f3e2d5);flex-shrink:0}
+.chat-head h2{font-size:clamp(19px,5vw,25px)}
+.chat-sub{line-height:1.35;max-width:65vw}
+.chat-tools{flex-shrink:0;overflow-x:auto;flex-wrap:nowrap;padding:8px 10px;scrollbar-width:none}
+.chat-tools::-webkit-scrollbar{display:none}
+.chat-tool{white-space:nowrap;flex-shrink:0}
+.chat-search-wrap{padding:4px 10px 7px;flex-shrink:0}
+#chatSearch{width:100%;min-width:0;box-sizing:border-box}
+.chat-status{flex-shrink:0;padding:5px 10px;font-size:11px;overflow-wrap:anywhere}
+#chatMessages{min-height:0;overscroll-behavior:contain;padding:12px 10px 18px;gap:9px;background-color:#fbf3ed;background-image:radial-gradient(ellipse at 12% 15%,#d9aeb51c 0 8%,transparent 28%),radial-gradient(ellipse at 90% 34%,#b78c7c18 0 7%,transparent 25%),radial-gradient(ellipse at 78% 84%,#e8c9d01c 0 9%,transparent 27%),linear-gradient(135deg,#fff8f0,#f8ece7)}
+.chat-bubble{max-width:min(84%,560px);overflow-wrap:anywhere;box-shadow:0 1px 1px #543c3210;touch-action:pan-y;user-select:text;-webkit-user-select:text}
+.chat-bubble.mine{background:#f2dcd1;border-color:#e8c9bd}
+.chat-bubble.menu-open{z-index:5;box-shadow:0 8px 28px #543c3228;outline:2px solid #cba89a}
+.chat-actions{display:none;position:relative;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid #d9bfb0}
+.chat-bubble.menu-open .chat-actions{display:flex}
+.chat-actions button{font-size:13px;padding:7px 9px;border-radius:18px;border:1px solid #d8bdab;background:#fffaf5;color:#63483d;min-height:34px}
+.chat-compose{display:flex;align-items:flex-end;gap:7px;padding:8px 9px calc(8px + env(safe-area-inset-bottom));background:#fff9f2;border-top:1px solid #ead8c8;flex-shrink:0;min-width:0}
+.chat-compose textarea{flex:1;width:0;min-width:0;max-height:120px;resize:none;box-sizing:border-box;line-height:1.35;padding:11px 12px;border-radius:20px;border:1px solid #d9c3b5;background:#fff;outline:none;font:16px/1.35 Arial,sans-serif;color:#543c32}
+.chat-compose .chat-btn{flex-shrink:0;min-height:42px;padding:8px 12px;white-space:nowrap}
+.chat-media{max-width:100%;height:auto;max-height:50vh;object-fit:contain;border-radius:12px}
+.chat-reply-preview{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:520px){#chatOverlay{padding:0}.chat-shell{height:100dvh;height:100vh;border-radius:0}.chat-head h2{font-size:21px}.chat-bubble{max-width:88%;padding:10px 11px}.chat-compose{gap:5px;padding-left:7px;padding-right:7px}.chat-compose textarea{font-size:16px}.chat-compose .chat-btn{padding:8px 10px}.chat-actions button{font-size:12px;padding:7px 8px}}
+@media(min-width:700px){#chatOverlay{padding:14px}.chat-shell{width:min(100%,900px);height:min(94dvh,920px);border:1px solid #e5d1c0;border-radius:22px;box-shadow:0 18px 60px #543c3220}}
 </style>
 <div id="chatOverlay" class="hidden" role="dialog" aria-modal="true" aria-label="Private chat">
  <section class="chat-shell">
-  <header class="chat-head"><div><h2>Our Little Chat ♡</h2><div class="chat-sub" id="chatPresence">A private corner for two · online status not yet configured</div></div><button id="chatClose" class="chat-btn" type="button">Close ✕</button></header>
+  <header class="chat-head"><div><h2>Our Little Chat ♡</h2><div class="chat-sub" id="chatPresence">A private corner for two · just us ♡</div></div><button id="chatClose" class="chat-btn" type="button">Close ✕</button></header>
   <div class="chat-tools"><button class="chat-tool" id="chatPinnedBtn" type="button">📌 Pinned</button><button class="chat-tool" id="chatAttachBtn" type="button">＋ Photo/video</button><button class="chat-tool" id="chatVoiceBtn" type="button">🎙 Record voice</button><input class="chat-file" id="chatFileInput" type="file" accept="image/*,video/*"></div>
   <div class="chat-search-wrap"><input id="chatSearch" placeholder="Search messages…" aria-label="Search messages"></div>
   <div id="chatStatus" class="chat-status">Connecting…</div>
@@ -448,11 +475,17 @@ async function openQcChat(){
 async function qcChatSend(message,type='text',mediaPath=null){if(!qcChatUser)throw new Error('Login session nahi mili.');const payload={sender_id:qcChatUser.id,message_text:message||'',message_type:type,media_path:mediaPath,reply_to:qcChatReplyTo?.id||null};const {data,error}=await qcClient.from('qc_chat_messages').insert(payload).select().single();if(error)throw error;if(!qcChatRows.some(x=>x.id===data.id))qcChatRows.push(data);qcChatReplyTo=null;document.getElementById('chatReplyBar').classList.add('hidden');qcChatRender()}
 document.getElementById('chatForm').addEventListener('submit',async e=>{e.preventDefault();const input=document.getElementById('chatInput'),message=input.value.trim(),btn=e.submitter;if(!message||!qcChatUser)return;btn.disabled=true;chatStatus.textContent='Sending…';try{await qcChatSend(message);input.value='';chatStatus.textContent='Message sent ♡'}catch(err){chatStatus.textContent='Message not sent: '+(err.message||'Check permissions')}finally{btn.disabled=false;input.focus()}});
 document.getElementById('chatSearch').addEventListener('input',qcChatRender);
+const qcChatInput=document.getElementById('chatInput');qcChatInput.addEventListener('input',()=>{qcChatInput.style.height='auto';qcChatInput.style.height=Math.min(qcChatInput.scrollHeight,120)+'px'});if(window.visualViewport){window.visualViewport.addEventListener('resize',()=>{if(!chatOverlay.classList.contains('hidden')){chatOverlay.style.height=window.visualViewport.height+'px'}});document.getElementById('chatClose').addEventListener('click',()=>{chatOverlay.style.height=''});}
 document.getElementById('chatClose').addEventListener('click',()=>chatOverlay.classList.add('hidden'));chatOverlay.addEventListener('click',e=>{if(e.target===chatOverlay)chatOverlay.classList.add('hidden')});
 document.getElementById('chatReplyCancel').addEventListener('click',()=>qcChatSetReply(null));
 document.getElementById('chatEmojiBtn').addEventListener('click',()=>{const input=document.getElementById('chatInput');input.value+='♡';input.focus()});
 document.getElementById('chatPinnedBtn').addEventListener('click',e=>{const b=e.currentTarget;b.dataset.only=b.dataset.only==='1'?'0':'1';b.textContent=b.dataset.only==='1'?'📌 Show all':'📌 Pinned';qcChatRender()});
-chatMessages.addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b)return;const m=qcChatRows.find(x=>x.id===b.dataset.id);if(!m)return;const act=b.dataset.act;try{
+// Long-press a message to reveal its contextual actions (WhatsApp-like).
+let qcLongPressTimer=null, qcLongPressTarget=null, qcLongPressTriggered=false;
+chatMessages.addEventListener('pointerdown',e=>{const bubble=e.target.closest('.chat-bubble');if(!bubble||e.target.closest('button'))return;qcLongPressTarget=bubble;qcLongPressTriggered=false;clearTimeout(qcLongPressTimer);qcLongPressTimer=setTimeout(()=>{document.querySelectorAll('.chat-bubble.menu-open').forEach(x=>x.classList.remove('menu-open'));bubble.classList.add('menu-open');qcLongPressTriggered=true;const rect=bubble.getBoundingClientRect();if(rect.bottom>window.innerHeight-150)bubble.scrollIntoView({block:'nearest',behavior:'smooth'});},430)});
+['pointerup','pointercancel','pointerleave'].forEach(ev=>chatMessages.addEventListener(ev,()=>clearTimeout(qcLongPressTimer)));
+chatMessages.addEventListener('contextmenu',e=>{const bubble=e.target.closest('.chat-bubble');if(!bubble)return;e.preventDefault();document.querySelectorAll('.chat-bubble.menu-open').forEach(x=>x.classList.remove('menu-open'));bubble.classList.add('menu-open')});
+chatMessages.addEventListener('click',async e=>{const b=e.target.closest('button[data-act]');if(!b){const bubble=e.target.closest('.chat-bubble');if(bubble&&!qcLongPressTriggered){document.querySelectorAll('.chat-bubble.menu-open').forEach(x=>{if(x!==bubble)x.classList.remove('menu-open')})}qcLongPressTriggered=false;return}const m=qcChatRows.find(x=>x.id===b.dataset.id);if(!m)return;const act=b.dataset.act; b.closest('.chat-bubble')?.classList.remove('menu-open');try{
  if(act==='reply'){qcChatSetReply(m);return}if(act==='copy'){await navigator.clipboard.writeText(m.message_text||m.media_path||'');chatStatus.textContent='Copied ♡';return}
  if(act==='react'){const emoji=prompt('Reaction emoji enter karo (e.g. ❤️ 😂 🥹)');if(!emoji)return;const {error}=await qcClient.from('qc_chat_reactions').insert({message_id:m.id,user_id:qcChatUser.id,emoji});if(error)throw error;chatStatus.textContent='Reaction saved ♡';return}
  if(act==='pin'){const {error}=await qcClient.from('qc_chat_messages').update({is_pinned:!m.is_pinned}).eq('id',m.id);if(error)throw error;m.is_pinned=!m.is_pinned;qcChatRender();return}
