@@ -98,8 +98,10 @@
 
 
 /* V4 Android viewport/composer correction */
-html,body{width:100%;height:100%;min-height:0;overflow:hidden;overscroll-behavior:none}
-#chatOverlay{position:fixed;inset:0;width:100%;height:100%;height:100dvh;overflow:hidden;align-items:stretch;justify-content:stretch;overscroll-behavior:none}
+html{width:100%;min-height:100%;overflow-x:hidden}
+body{width:100%;min-height:100vh;height:auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:auto}
+body.chat-open{overflow:hidden;touch-action:none}
+#chatOverlay{position:fixed;inset:0;width:100%;height:100%;height:100dvh;overflow:hidden;align-items:stretch;justify-content:stretch;overscroll-behavior:none;touch-action:auto}
 #chatOverlay.hidden{display:none!important}
 .chat-shell{height:100%;min-height:0;max-height:none;display:flex;flex-direction:column}
 .chat-head,.chat-tools,.chat-search-wrap,.chat-status,.chat-replybar,.chat-compose{flex:0 0 auto}
@@ -494,7 +496,7 @@ function qcChatRender(){
 function qcChatSetReply(m){qcChatReplyTo=m;document.getElementById('chatReplyBar').classList.toggle('hidden',!m);document.getElementById('chatReplyText').textContent=m?'Replying to: '+((m.message_text||'Media message').slice(0,100)):'Replying…';document.getElementById('chatInput').focus()}
 async function qcChatSignedUrl(path){const {data,error}=await qcClient.storage.from(QC_CHAT_BUCKET).createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
 async function openQcChat(){
- if(!window.__qcAuthenticated){alert('Pehle login karo.');return}chatOverlay.classList.remove('hidden');chatStatus.textContent='Loading messages…';
+ if(!window.__qcAuthenticated){alert('Pehle login karo.');return}chatOverlay.classList.remove('hidden');document.body.classList.add('chat-open');chatStatus.textContent='Loading messages…';
  try{const {data:{user},error:ue}=await qcClient.auth.getUser();if(ue||!user)throw new Error('Login session nahi mili.');if(!QC_CHAT_PARTICIPANTS.includes(user.id))throw new Error('Is private chat ka access allowed nahi hai.');qcChatUser=user;
  const {data,error}=await qcClient.from('qc_chat_messages').select('*').order('created_at',{ascending:true}).limit(300);if(error)throw error;qcChatRows=data||[];
  for(const m of qcChatRows){if(m.media_path){try{m.media_url=await qcChatSignedUrl(m.media_path)}catch(e){m.media_url=''}}}qcChatRender();chatStatus.textContent='Private chat · realtime connected when available ♡';
@@ -505,7 +507,7 @@ async function qcChatSend(message,type='text',mediaPath=null){if(!qcChatUser)thr
 document.getElementById('chatForm').addEventListener('submit',async e=>{e.preventDefault();const input=document.getElementById('chatInput'),message=input.value.trim(),btn=e.submitter;if(!message||!qcChatUser)return;btn.disabled=true;chatStatus.textContent='Sending…';try{await qcChatSend(message);input.value='';chatStatus.textContent='Message sent ♡'}catch(err){chatStatus.textContent='Message not sent: '+(err.message||'Check permissions')}finally{btn.disabled=false;input.focus()}});
 document.getElementById('chatSearch').addEventListener('input',qcChatRender);
 const qcChatInput=document.getElementById('chatInput');qcChatInput.addEventListener('input',()=>{qcChatInput.style.height='auto';qcChatInput.style.height=Math.min(qcChatInput.scrollHeight,96)+'px'});function qcChatFitViewport(){if(!window.visualViewport||chatOverlay.classList.contains('hidden'))return;chatOverlay.style.height=window.visualViewport.height+'px';chatOverlay.style.top=window.visualViewport.offsetTop+'px';}if(window.visualViewport){window.visualViewport.addEventListener('resize',qcChatFitViewport);window.visualViewport.addEventListener('scroll',qcChatFitViewport);}qcChatInput.addEventListener('focus',()=>setTimeout(()=>{qcChatFitViewport();document.getElementById('chatForm')?.scrollIntoView({block:'nearest'});},120));
-document.getElementById('chatClose').addEventListener('click',()=>{chatOverlay.classList.add('hidden');chatOverlay.style.height='';chatOverlay.style.top='';});chatOverlay.addEventListener('click',e=>{if(e.target===chatOverlay)chatOverlay.classList.add('hidden')});
+function qcCloseChat(){chatOverlay.classList.add('hidden');document.body.classList.remove('chat-open');chatOverlay.style.height='';chatOverlay.style.top=''}document.getElementById('chatClose').addEventListener('click',qcCloseChat);chatOverlay.addEventListener('click',e=>{if(e.target===chatOverlay)qcCloseChat()});
 document.getElementById('chatReplyCancel').addEventListener('click',()=>qcChatSetReply(null));
 document.getElementById('chatEmojiBtn').addEventListener('click',()=>{const input=document.getElementById('chatInput');input.value+='♡';input.focus()});
 document.getElementById('chatPinnedBtn').addEventListener('click',e=>{const b=e.currentTarget;b.dataset.only=b.dataset.only==='1'?'0':'1';b.textContent=b.dataset.only==='1'?'📌 Show all':'📌 Pinned';qcChatRender()});
