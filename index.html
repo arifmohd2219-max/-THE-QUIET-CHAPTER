@@ -220,18 +220,16 @@ body.chat-open{overflow:hidden;touch-action:none}
 .chat-reply-preview{max-width:100%;overflow-wrap:anywhere}
 @media(max-width:520px){#chatOverlay{padding:0}.chat-shell{height:100dvh;height:100vh;border-radius:0}.chat-head h2{font-size:21px}.chat-bubble{max-width:88%;padding:10px 11px}.chat-compose{gap:5px;padding-left:7px;padding-right:7px}.chat-compose textarea{font-size:16px}.chat-compose .chat-btn{padding:8px 10px}.chat-actions button{font-size:12px;padding:7px 8px}}
 @media(min-width:700px){#chatOverlay{padding:14px}.chat-shell{width:min(100%,900px);height:min(94dvh,920px);border:1px solid #e5d1c0;border-radius:22px;box-shadow:0 18px 60px #543c3220}}
-
-.chat-head-controls{display:flex;gap:7px;align-items:center}.chat-shell{position:relative;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:#fbf2e8}.chat-head{flex-shrink:0;z-index:2}.chat-status{flex-shrink:0}.chat-search-wrap,.chat-tools{display:none!important}#chatMessages{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px 13px 58px;scrollbar-width:thin}.chat-compose{flex-shrink:0;z-index:5;padding-bottom:calc(8px + env(safe-area-inset-bottom));background:#fff9f2}.chat-compose.hidden{display:none!important}.chat-reply-open{position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:4;border:1px solid #d9b7a7;background:#fff8f1;color:#704b42;border-radius:20px;padding:10px 13px;box-shadow:0 4px 14px #543c3222}.chat-shell:has(.chat-compose:not(.hidden)) .chat-reply-open{display:none}.chat-pinned-toggle{align-self:flex-start;margin:4px 10px 8px;flex-shrink:0}.chat-bubble .chat-actions{display:none}.chat-bubble.menu-open .chat-actions{display:flex;flex-wrap:wrap}.chat-bubble.menu-open .chat-actions button{font-size:12px}.chat-bubble .chat-actions{position:relative;left:auto;top:auto;transform:none;margin-top:7px;background:#fff8f1;border:1px solid #e7d4c5;border-radius:10px;padding:5px;box-shadow:none}.chat-meta{overflow-wrap:anywhere}@media(max-width:520px){#chatOverlay{position:fixed;inset:0;padding:0;height:100dvh!important;top:0!important}.chat-shell{width:100%;height:100%;height:100dvh;border-radius:0}.chat-head{padding-top:calc(10px + env(safe-area-inset-top))}.chat-compose{padding-bottom:calc(8px + env(safe-area-inset-bottom))}.chat-reply-open{top:50%}}
 </style>
 <div id="chatOverlay" class="hidden" role="dialog" aria-modal="true" aria-label="Private chat">
  <section class="chat-shell">
-  <header class="chat-head"><div><h2 id="chatTitle">Our Little Chat ♡</h2><div class="chat-sub" id="chatPresence">Checking status…</div></div><div class="chat-head-controls"><button id="chatLockBtn" class="chat-btn" type="button" aria-label="Lock website">🔒 Lock</button><button id="chatClose" class="chat-btn" type="button">Close ✕</button></div></header>
+  <header class="chat-head"><div><h2>Our Little Chat ♡</h2><div class="chat-sub" id="chatPresence">A private corner for two · just us ♡</div></div><button id="chatClose" class="chat-btn" type="button">Close ✕</button></header>
+  <div class="chat-tools"><button class="chat-tool" id="chatPinnedBtn" type="button">📌 Pinned</button><button class="chat-tool" id="chatAttachBtn" type="button">＋ Photo/video</button><button class="chat-tool" id="chatVoiceBtn" type="button">🎙 Record voice</button><input class="chat-file" id="chatFileInput" type="file" accept="image/*,video/*"></div>
+  <div class="chat-search-wrap"><input id="chatSearch" placeholder="Search messages…" aria-label="Search messages"></div>
   <div id="chatStatus" class="chat-status">Connecting…</div>
-  <div id="chatMessages" aria-live="polite"></div>
-  <button id="chatReplyOpen" type="button" class="chat-reply-open">↩ Reply</button>
   <div id="chatReplyBar" class="chat-replybar hidden"><span id="chatReplyText">Replying…</span><button class="chat-tool" id="chatReplyCancel" type="button">Cancel ×</button></div>
-  <form id="chatForm" class="chat-compose hidden"><button class="chat-btn" id="chatAttachBtn" type="button" title="Photo or video">＋</button><input class="chat-file" id="chatFileInput" type="file" accept="image/*,video/*"><textarea id="chatInput" rows="1" maxlength="5000" placeholder="Write something…"></textarea><button class="chat-btn" id="chatVoiceBtn" type="button" title="Record voice">🎙</button><button class="chat-btn" type="submit">Send ♡</button></form>
-  <button class="chat-tool chat-pinned-toggle" id="chatPinnedBtn" type="button" data-only="0">📌 Pinned</button>
+  <div id="chatMessages" aria-live="polite"></div>
+  <form id="chatForm" class="chat-compose"><button class="chat-btn" id="chatEmojiBtn" type="button" title="Add heart">♡</button><textarea id="chatInput" rows="1" maxlength="5000" placeholder="Write something…"></textarea><button class="chat-btn" type="submit">Send ♡</button></form>
  </section>
 </div>
 
@@ -489,19 +487,17 @@ function qcChatEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;
 function qcChatMine(m){return !!qcChatUser&&m.sender_id===qcChatUser.id}
 function qcChatDateLabel(d){const date=new Date(d),now=new Date(),y=new Date();y.setDate(now.getDate()-1);if(date.toDateString()===now.toDateString())return 'Today';if(date.toDateString()===y.toDateString())return 'Yesterday';return date.toLocaleDateString([], {day:'numeric',month:'long',year:'numeric'})}
 function qcChatRender(){
- const pinnedOnly=document.getElementById('chatPinnedBtn').dataset.only==='1';
- const rows=qcChatRows.filter(m=>(!pinnedOnly||m.is_pinned));
+ const term=document.getElementById('chatSearch').value.trim().toLowerCase(),pinnedOnly=document.getElementById('chatPinnedBtn').dataset.only==='1';
+ const rows=qcChatRows.filter(m=>!m.is_deleted_for_everyone&&(!term||(m.message_text||'').toLowerCase().includes(term))&&(!pinnedOnly||m.is_pinned));
  let lastDay='';
- chatMessages.innerHTML=rows.map(m=>{const mine=qcChatMine(m),day=qcChatDateLabel(m.created_at),when=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});let dateSep='';if(day!==lastDay){dateSep=`<div class="chat-date">${qcChatEscape(day)}</div>`;lastDay=day}const parent=m.reply_to?qcChatRows.find(x=>x.id===m.reply_to):null;let content=qcChatEscape(m.is_deleted_for_everyone?'This message was deleted.':(m.message_text||''));if(m.message_type==='image'&&m.media_path)content=`${content}<img class="chat-media" src="${qcChatEscape(m.media_url||'')}" alt="Shared photo">`;else if(m.message_type==='video'&&m.media_path)content=`${content}<video class="chat-media" controls playsinline src="${qcChatEscape(m.media_url||'')}"></video>`;else if(m.message_type==='voice'&&m.media_path)content=`<audio class="chat-voice" controls src="${qcChatEscape(m.media_url||'')}"></audio>`;return `${dateSep}<article class="chat-bubble ${mine?'mine':''}" data-id="${m.id}">${m.is_pinned?'<div class="chat-pinned">📌 Pinned</div>':''}${parent?`<div class="chat-reply-preview">↩ ${qcChatEscape((parent.message_text||'Media message').slice(0,140))}</div>`:''}<div>${content||'<i>Media message</i>'}</div><div class="chat-meta">${m.is_edited?'edited · ':''}${when}${mine?(m.read_at?' · ✓✓ read':m.delivered_at?' · ✓✓ delivered':' · ✓ sent'):''}</div><div class="chat-actions"><button data-act="reply" data-id="${m.id}">↩ Reply</button><button data-act="react" data-id="${m.id}">♡ React</button><button data-act="pin" data-id="${m.id}">${m.is_pinned?'Unpin':'📌 Pin'}</button><button data-act="copy" data-id="${m.id}">Copy</button>${mine?'<button data-act="edit" data-id="'+m.id+'">Edit</button>':''}${qcChatUser&&qcChatUser.id===QC_CHAT_OWNER?'<button data-act="delete" data-id="'+m.id+'">Delete</button>':''}</div></article>`}).join('');
+ chatMessages.innerHTML=rows.map(m=>{const mine=qcChatMine(m),day=qcChatDateLabel(m.created_at),when=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});let dateSep='';if(day!==lastDay){dateSep=`<div class="chat-date">${qcChatEscape(day)}</div>`;lastDay=day}const parent=m.reply_to?qcChatRows.find(x=>x.id===m.reply_to):null;let content=qcChatEscape(m.message_text||'');if(m.message_type==='image'&&m.media_path)content=`${content}<img class="chat-media" src="${qcChatEscape(m.media_url||'')}" alt="Shared photo">`;else if(m.message_type==='video'&&m.media_path)content=`${content}<video class="chat-media" controls playsinline src="${qcChatEscape(m.media_url||'')}"></video>`;else if(m.message_type==='voice'&&m.media_path)content=`<audio class="chat-voice" controls src="${qcChatEscape(m.media_url||'')}"></audio>`;return `${dateSep}<article class="chat-bubble ${mine?'mine':''}" data-id="${m.id}">${m.is_pinned?'<div class="chat-pinned">📌 Pinned</div>':''}${parent?`<div class="chat-reply-preview">↩ ${qcChatEscape((parent.message_text||'Media message').slice(0,140))}</div>`:''}<div>${content||'<i>Media message</i>'}</div><div class="chat-meta">${m.is_edited?'edited · ':''}${when}${mine?(m.read_at?' · ✓✓ read':m.delivered_at?' · ✓✓ delivered':' · ✓ sent'):''}</div><div class="chat-actions"><button data-act="reply" data-id="${m.id}">↩ Reply</button><button data-act="react" data-id="${m.id}">♡ React</button><button data-act="pin" data-id="${m.id}">${m.is_pinned?'Unpin':'📌 Pin'}</button><button data-act="copy" data-id="${m.id}">Copy</button>${mine?'<button data-act="edit" data-id="'+m.id+'">Edit</button>':''}${qcChatUser&&qcChatUser.id===QC_CHAT_OWNER?'<button data-act="delete" data-id="'+m.id+'">Delete</button>':''}</div></article>`}).join('');
  if(!rows.length)chatMessages.innerHTML='<div style="text-align:center;color:#967c6e;padding:30px">No messages here yet. Start your little conversation ♡</div>';chatMessages.scrollTop=chatMessages.scrollHeight;
 }
-function qcChatSetReply(m){qcChatReplyTo=m;document.getElementById('chatForm').classList.remove('hidden');document.getElementById('chatReplyBar').classList.toggle('hidden',!m);document.getElementById('chatReplyText').textContent=m?'Replying to: '+((m.message_text||'Media message').slice(0,100)):'Replying…';document.getElementById('chatInput').focus()}
+function qcChatSetReply(m){qcChatReplyTo=m;document.getElementById('chatReplyBar').classList.toggle('hidden',!m);document.getElementById('chatReplyText').textContent=m?'Replying to: '+((m.message_text||'Media message').slice(0,100)):'Replying…';document.getElementById('chatInput').focus()}
 async function qcChatSignedUrl(path){const {data,error}=await qcClient.storage.from(QC_CHAT_BUCKET).createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
 async function openQcChat(){
- if(!window.__qcAuthenticated){alert('Pehle login karo.');return}chatOverlay.classList.remove('hidden');document.getElementById('chatForm').classList.add('hidden');document.getElementById('chatReplyBar').classList.add('hidden');document.body.classList.add('chat-open');chatStatus.textContent='Loading messages…';
+ if(!window.__qcAuthenticated){alert('Pehle login karo.');return}chatOverlay.classList.remove('hidden');document.body.classList.add('chat-open');chatStatus.textContent='Loading messages…';
  try{const {data:{user},error:ue}=await qcClient.auth.getUser();if(ue||!user)throw new Error('Login session nahi mili.');if(!QC_CHAT_PARTICIPANTS.includes(user.id))throw new Error('Is private chat ka access allowed nahi hai.');qcChatUser=user;
- document.getElementById('chatTitle').textContent=user.id===QC_CHAT_OWNER?'Asia ♡':'Arif ♡';
- document.getElementById('chatPresence').textContent='Private chat · online status updates when available';
  const {data,error}=await qcClient.from('qc_chat_messages').select('*').order('created_at',{ascending:true}).limit(300);if(error)throw error;qcChatRows=data||[];
  for(const m of qcChatRows){if(m.media_path){try{m.media_url=await qcChatSignedUrl(m.media_path)}catch(e){m.media_url=''}}}qcChatRender();chatStatus.textContent='Private chat · realtime connected when available ♡';
  if(qcChatChannel)await qcClient.removeChannel(qcChatChannel);qcChatChannel=qcClient.channel('qc-private-chat').on('postgres_changes',{event:'*',schema:'public',table:'qc_chat_messages'},async payload=>{if(payload.eventType==='INSERT'&&!qcChatRows.some(x=>x.id===payload.new.id)){const row=payload.new;if(row.media_path){try{row.media_url=await qcChatSignedUrl(row.media_path)}catch(e){row.media_url=''}}qcChatRows.push(row)}else if(payload.eventType==='UPDATE')qcChatRows=qcChatRows.map(x=>x.id===payload.new.id?{...payload.new,media_url:x.media_url}:x);else if(payload.eventType==='DELETE')qcChatRows=qcChatRows.filter(x=>x.id!==payload.old.id);qcChatRows.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));qcChatRender()}).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')chatStatus.textContent='Live connection unavailable; refresh chat to reload.'});
@@ -509,9 +505,7 @@ async function openQcChat(){
 }
 async function qcChatSend(message,type='text',mediaPath=null){if(!qcChatUser)throw new Error('Login session nahi mili.');const payload={sender_id:qcChatUser.id,message_text:message||'',message_type:type,media_path:mediaPath,reply_to:qcChatReplyTo?.id||null};const {data,error}=await qcClient.from('qc_chat_messages').insert(payload).select().single();if(error)throw error;if(!qcChatRows.some(x=>x.id===data.id))qcChatRows.push(data);qcChatReplyTo=null;document.getElementById('chatReplyBar').classList.add('hidden');qcChatRender()}
 document.getElementById('chatForm').addEventListener('submit',async e=>{e.preventDefault();const input=document.getElementById('chatInput'),message=input.value.trim(),btn=e.submitter;if(!message||!qcChatUser)return;btn.disabled=true;chatStatus.textContent='Sending…';try{await qcChatSend(message);input.value='';chatStatus.textContent='Message sent ♡'}catch(err){chatStatus.textContent='Message not sent: '+(err.message||'Check permissions')}finally{btn.disabled=false;input.focus()}});
-document.getElementById('chatReplyOpen').addEventListener('click',()=>{document.getElementById('chatForm').classList.remove('hidden');setTimeout(()=>{qcChatFitViewport();document.getElementById('chatInput').focus()},80)});
-document.getElementById('chatLockBtn').addEventListener('click',()=>{qcCloseChat();if(typeof lockWebsite==='function')lockWebsite()});
-
+document.getElementById('chatSearch').addEventListener('input',qcChatRender);
 const qcChatInput=document.getElementById('chatInput');qcChatInput.addEventListener('input',()=>{qcChatInput.style.height='auto';qcChatInput.style.height=Math.min(qcChatInput.scrollHeight,96)+'px'});function qcChatFitViewport(){if(!window.visualViewport||chatOverlay.classList.contains('hidden'))return;chatOverlay.style.height=window.visualViewport.height+'px';chatOverlay.style.top=window.visualViewport.offsetTop+'px';}if(window.visualViewport){window.visualViewport.addEventListener('resize',qcChatFitViewport);window.visualViewport.addEventListener('scroll',qcChatFitViewport);}qcChatInput.addEventListener('focus',()=>setTimeout(()=>{qcChatFitViewport();document.getElementById('chatForm')?.scrollIntoView({block:'nearest'});},120));
 function qcCloseChat(){chatOverlay.classList.add('hidden');document.body.classList.remove('chat-open');chatOverlay.style.height='';chatOverlay.style.top=''}document.getElementById('chatClose').addEventListener('click',qcCloseChat);chatOverlay.addEventListener('click',e=>{if(e.target===chatOverlay)qcCloseChat()});
 document.getElementById('chatReplyCancel').addEventListener('click',()=>qcChatSetReply(null));
@@ -532,8 +526,241 @@ chatMessages.addEventListener('click',async e=>{const b=e.target.closest('button
 });
 document.getElementById('chatAttachBtn').addEventListener('click',()=>document.getElementById('chatFileInput').click());
 document.getElementById('chatFileInput').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;if(!qcChatUser){chatStatus.textContent='Pehle login karo.';return}if(!/^image\/|^video\//i.test(file.type)){chatStatus.textContent='Photo ya video select karo.';e.target.value='';return}if(file.size>100*1024*1024){chatStatus.textContent='Maximum file size 100 MB hai.';e.target.value='';return}chatStatus.textContent='Media upload ho rahi hai…';try{const path=`chat/${qcChatUser.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;const {error}=await qcClient.storage.from(QC_CHAT_BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;await qcChatSend(file.name,file.type.startsWith('video/')?'video':'image',path);chatStatus.textContent='Media sent ♡'}catch(err){chatStatus.textContent='Media upload failed: '+err.message+' · bucket permissions check karo'}finally{e.target.value=''}});
-document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qcChatRecorder&&qcChatRecorder.state==='recording'){qcChatRecorder.stop();document.getElementById('chatVoiceBtn').textContent='🎙 Record voice';return}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});qcChatChunks=[];qcChatRecorder=new MediaRecorder(stream);qcChatRecorder.ondataavailable=e=>{if(e.data.size)qcChatChunks.push(e.data)};qcChatRecorder.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(qcChatChunks,{type:qcChatRecorder.mimeType||'audio/webm'});if(!blob.size)return;const url=URL.createObjectURL(blob);const preview=document.createElement('audio');preview.controls=true;preview.src=url;const send=confirm('Voice recording ready. Press OK to send, Cancel to discard.');if(!send){URL.revokeObjectURL(url);chatStatus.textContent='Voice recording discarded.';return}try{const path=`chat/${qcChatUser.id}/${Date.now()}_voice.webm`;const {error}=await qcClient.storage.from(QC_CHAT_BUCKET).upload(path,blob,{upsert:false,contentType:blob.type});if(error)throw error;await qcChatSend('Voice message','voice',path);chatStatus.textContent='Voice message sent ♡'}catch(err){chatStatus.textContent='Voice upload failed: '+err.message+' · bucket permissions check karo'}URL.revokeObjectURL(url)};qcChatRecorder.start();document.getElementById('chatVoiceBtn').textContent='■ Stop recording';chatStatus.textContent='Recording… click Stop when finished.'}catch(err){chatStatus.textContent='Microphone unavailable: '+err.message}});
+document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qcChatRecorder&&qcChatRecorder.state==='recording'){qcChatRecorder.stop();document.getElementById('chatVoiceBtn').textContent='🎙 Record voice';return}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});qcChatChunks=[];qcChatRecorder=new MediaRecorder(stream);qcChatRecorder.ondataavailable=e=>{if(e.data.size)qcChatChunks.push(e.data)};qcChatRecorder.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(qcChatChunks,{type:qcChatRecorder.mimeType||'audio/webm'});if(!blob.size)return;const url=URL.createObjectURL(blob);const send=confirm('Voice recording ready. OK = send, Cancel = discard.');if(!send){URL.revokeObjectURL(url);chatStatus.textContent='Voice recording discarded.';return}try{const path=`chat/${qcChatUser.id}/${Date.now()}_voice.webm`;const {error}=await qcClient.storage.from(QC_CHAT_BUCKET).upload(path,blob,{upsert:false,contentType:blob.type});if(error)throw error;await qcChatSend('Voice message','voice',path);chatStatus.textContent='Voice message sent ♡'}catch(err){chatStatus.textContent='Voice upload failed: '+err.message+' · bucket permissions check karo'}URL.revokeObjectURL(url)};qcChatRecorder.start();document.getElementById('chatVoiceBtn').textContent='■ Stop recording';chatStatus.textContent='Recording… click Stop when finished.'}catch(err){chatStatus.textContent='Microphone unavailable: '+err.message}});
 
+</script>
+
+
+<style id="qc-stability-patch">
+/* Stability patch: keep the original site and PIN flow intact. */
+#chatOverlay:not(.hidden) .chat-shell{position:relative;isolation:isolate}
+#chatOverlay .chat-tools,#chatOverlay .chat-tool,#chatOverlay .chat-btn{pointer-events:auto;position:relative;z-index:8}
+#chatFileInput{position:absolute!important;width:1px!important;height:1px!important;opacity:.01!important;left:0!important;bottom:0!important;display:block!important;pointer-events:none!important}
+#chatOverlay .chat-actions{z-index:20}
+#chatOverlay .chat-bubble.menu-open{position:relative;z-index:12}
+#chatOverlay .chat-actions button{touch-action:manipulation}
+#qcFloatingReply{position:absolute;left:12px;top:48%;transform:translateY(-50%);z-index:30;border:0;border-radius:22px;padding:12px 16px;background:#9f555e;color:#fffaf5;font-weight:700;box-shadow:0 5px 18px #543c3240;cursor:pointer;touch-action:manipulation}
+#qcFloatingReply:active{background:#713a43;transform:translateY(-50%) scale(.97)}
+#chatOverlay.qc-compose-closed .chat-compose{display:none!important}
+#chatOverlay.qc-compose-closed #chatReplyBar{display:none!important}
+#chatOverlay.qc-compose-open .chat-compose{display:flex!important}
+#chatOverlay.qc-compose-open #chatReplyBar:not(.hidden){display:flex!important}
+#qcVoicePreview{position:absolute;left:12px;right:12px;bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:40;background:#fffaf4;border:1px solid #d8bdab;border-radius:16px;padding:12px;box-shadow:0 8px 28px #543c3240;color:#543c32}
+#qcVoicePreview[hidden]{display:none!important}#qcVoicePreview audio{width:100%;margin:8px 0}#qcVoicePreview button{border:0;border-radius:12px;padding:9px 13px;margin:4px;background:#9f555e;color:white}
+#qcPresence{font-size:11px;color:#927166;margin-left:5px}
+@media(max-width:520px){#qcFloatingReply{left:8px;padding:11px 13px;font-size:13px}#chatOverlay.qc-compose-open #chatForm{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}}
+</style>
+<script id="qc-stability-patch-js">
+(()=>{
+ const $=id=>document.getElementById(id);
+ const overlay=$('chatOverlay'), messages=$('chatMessages'), status=$('chatStatus');
+ if(!overlay||!messages||!status)return;
+ // Keep the original PIN/login and existing page sections untouched.
+ overlay.classList.add('qc-compose-closed');
+ const shell=overlay.querySelector('.chat-shell');
+ if(shell&&!$('qcFloatingReply')){const b=document.createElement('button');b.id='qcFloatingReply';b.type='button';b.textContent='↩ Reply';b.setAttribute('aria-label','Open reply composer');shell.appendChild(b);b.addEventListener('click',()=>{overlay.classList.remove('qc-compose-closed');overlay.classList.add('qc-compose-open');const input=$('chatInput');if(input){input.focus();setTimeout(()=>input.scrollIntoView({block:'nearest'}),120)}b.hidden=true;});}
+ // Composer appears only after Reply; tapping a message's Reply action opens it too.
+ const originalRender=window.qcChatRender;
+ // Use delegated click handling so dynamic message bubbles remain supported.
+ messages.addEventListener('click',e=>{const b=e.target.closest('button[data-act="reply"]');if(b){overlay.classList.remove('qc-compose-closed');overlay.classList.add('qc-compose-open');const fr=$('qcFloatingReply');if(fr)fr.hidden=true;setTimeout(()=>{$('chatInput')?.focus()},80)}},true);
+ $('chatReplyCancel')?.addEventListener('click',()=>{overlay.classList.remove('qc-compose-open');overlay.classList.add('qc-compose-closed');const fr=$('qcFloatingReply');if(fr)fr.hidden=false});
+ // Rebind attachment button defensively to avoid stale/overlapping listeners.
+ const oldAttach=$('chatAttachBtn');
+ if(oldAttach){const btn=oldAttach.cloneNode(true);oldAttach.replaceWith(btn);btn.addEventListener('click',()=>{const input=$('chatFileInput');if(!input){status.textContent='Photo/video picker missing in this file.';return}input.value='';try{input.click()}catch(err){status.textContent='Unable to open gallery: '+err.message}})}
+ // Rebind microphone with a complete record -> stop -> preview -> send/discard flow.
+ const oldMic=$('chatVoiceBtn');
+ if(oldMic){const mic=oldMic.cloneNode(true);oldMic.replaceWith(mic);let recorder=null,stream=null,chunks=[],previewUrl=null,recording=false;
+   if(shell&&!$('qcVoicePreview')){const panel=document.createElement('div');panel.id='qcVoicePreview';panel.hidden=true;panel.innerHTML='<strong>Voice message preview</strong><audio controls></audio><div><button type="button" id="qcVoiceSend">Send voice</button><button type="button" id="qcVoiceDiscard">Delete</button></div>';shell.appendChild(panel)}
+   const panel=$('qcVoicePreview'),audio=panel?.querySelector('audio');
+   const cleanup=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}if(audio)audio.removeAttribute('src');if(panel)panel.hidden=true;mic.textContent='🎙 Record voice';recording=false;recorder=null;chunks=[]};
+   mic.addEventListener('click',async()=>{
+    if(recording&&recorder&&recorder.state==='recording'){recorder.stop();mic.textContent='Preparing preview…';mic.disabled=true;return}
+    if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){status.textContent='Voice recording is not supported in this browser. Open the HTTPS website in Chrome and allow microphone access.';return}
+    try{stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];let mime='';for(const t of ['audio/webm;codecs=opus','audio/webm','audio/mp4']){if(MediaRecorder.isTypeSupported?.(t)){mime=t;break}}recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};recorder.onerror=e=>{status.textContent='Recording error: '+(e.error?.message||'Please try again');cleanup();mic.disabled=false};recorder.onstop=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}const blob=new Blob(chunks,{type:recorder?.mimeType||'audio/webm'});if(!blob.size){status.textContent='No audio captured. Try again.';cleanup();mic.disabled=false;return}previewUrl=URL.createObjectURL(blob);if(audio)audio.src=previewUrl;if(panel)panel.hidden=false;mic.textContent='🎙 Record voice';mic.disabled=false;recording=false;status.textContent='Listen to the preview, then Send voice or Delete.';panel.dataset.blobType=blob.type;window.__qcPendingVoiceBlob=blob};recorder.start();recording=true;mic.textContent='■ Stop recording';status.textContent='Recording… tap Stop when finished.'}
+    catch(err){cleanup();mic.disabled=false;status.textContent='Microphone unavailable: '+(err.name==='NotAllowedError'?'Allow microphone permission in browser settings.':err.message||'Check microphone permission and HTTPS.')}
+   });
+   $('qcVoiceDiscard')?.addEventListener('click',()=>{window.__qcPendingVoiceBlob=null;cleanup();status.textContent='Voice recording discarded.'});
+   $('qcVoiceSend')?.addEventListener('click',async()=>{const blob=window.__qcPendingVoiceBlob;if(!blob)return;if(!qcChatUser && !window.__qcAuthenticated){status.textContent='Please unlock/login first.';return}const user=qcChatUser;if(!user){status.textContent='Chat session is not ready. Close and reopen chat, then try again.';return}const send=$('qcVoiceSend');send.disabled=true;try{const ext=blob.type.includes('mp4')?'m4a':'webm';const path=`chat/${user.id}/${Date.now()}_voice.${ext}`;const {error}=await qcClient.storage.from('private-memories').upload(path,blob,{upsert:false,contentType:blob.type||'audio/webm'});if(error)throw error;const {error:insertError}=await qcClient.from('qc_chat_messages').insert({sender_id:user.id,message_text:'Voice message',message_type:'voice',media_path:path,reply_to:window.qcChatReplyTo?.id||null});if(insertError)throw insertError;window.__qcPendingVoiceBlob=null;cleanup();status.textContent='Voice message sent ♡'}catch(err){status.textContent='Voice upload failed: '+(err.message||'Check private-memories bucket permissions')}finally{send.disabled=false}});
+ }
+ // Realtime presence uses Supabase Realtime Presence; no extra table needed.
+ let presenceChannel=null,presenceTimer=null;
+ async function startPresence(){try{if(!qcClient||!window.__qcAuthenticated)return;const {data:{user},error}=await qcClient.auth.getUser();if(error||!user||!['807c1735-5e4a-4402-843a-61d7767ff043','a16253ac-e839-4abd-8a7a-43643f3a06f3'].includes(user.id))return;qcChatUser=user;let label=$('qcPresence');if(!label){label=document.createElement('span');label.id='qcPresence';const sub=overlay.querySelector('.chat-sub')||overlay.querySelector('.chat-head');sub?.appendChild(label)}const other=user.id==='807c1735-5e4a-4402-843a-61d7767ff043'?'a16253ac-e839-4abd-8a7a-43643f3a06f3':'807c1735-5e4a-4402-843a-61d7767ff043';const channel=qcClient.channel('qc-private-presence',{config:{presence:{key:user.id}}});presenceChannel=channel;channel.on('presence',{event:'sync'},()=>{const state=channel.presenceState();const online=Object.keys(state).some(k=>k===other);label.textContent=online?' · Online':' · Offline';label.style.color=online?'#397b59':'#927166'}).subscribe(async st=>{if(st==='SUBSCRIBED'){await channel.track({user_id:user.id,online_at:new Date().toISOString(),last_seen:new Date().toISOString()})}});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&presenceChannel){presenceChannel.track({user_id:user.id,online_at:new Date().toISOString(),last_seen:new Date().toISOString()}).catch(()=>{})}})}catch(e){const label=$('qcPresence');if(label)label.textContent=' · Status unavailable'}}
+ // Start when chat opens and retry after auth has initialized.
+ const openButton=document.querySelector('[onclick*="openQcChat"]');openButton?.addEventListener('click',()=>setTimeout(startPresence,500));
+ const openObserver=new MutationObserver(()=>{if(!overlay.classList.contains('hidden'))startPresence()});openObserver.observe(overlay,{attributes:true,attributeFilter:['class']});
+ window.addEventListener('beforeunload',()=>{if(presenceChannel&&qcClient)qcClient.removeChannel(presenceChannel)});
+})();
+</script>
+
+
+<style id="qc-final-design-overrides">
+/* Reference design: message-only state, reply dock, mobile bottom sheet, no search. */
+#chatOverlay .chat-search-wrap,#chatOverlay #chatSearch{display:none!important}
+#chatOverlay .chat-tools{display:none!important}
+#chatOverlay .chat-shell{position:relative;overflow:hidden}
+#chatOverlay .chat-head{flex:0 0 auto;position:relative;z-index:5}
+#chatOverlay #chatStatus{flex:0 0 auto}
+#chatOverlay #chatMessages{min-height:0;flex:1 1 auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+#chatOverlay #chatForm{flex:0 0 auto;position:relative;z-index:15}
+#chatOverlay #qcFloatingReply{left:12px;top:50%;transform:translateY(-50%);min-width:76px;min-height:48px;border-radius:22px;background:#8d454a;color:#fffaf5;border:1px solid #c58e82;box-shadow:0 4px 14px #4c2b2433}
+#chatOverlay.qc-compose-open #qcFloatingReply{display:none!important}
+#chatOverlay.qc-compose-closed #chatForm,#chatOverlay.qc-compose-closed #chatReplyBar{display:none!important}
+#chatOverlay.qc-compose-open #chatForm{display:flex!important}
+#chatOverlay .chat-bubble.menu-open{z-index:60}
+#chatOverlay .chat-bubble.menu-open .chat-actions{display:flex!important}
+#chatOverlay .chat-actions{display:none;gap:6px;flex-wrap:wrap}
+#chatOverlay .chat-actions button{border-radius:14px;padding:8px 10px}
+#qcMobileActionSheet{display:none}
+@media(max-width:600px){
+ #chatOverlay .chat-shell{height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
+ #chatOverlay .chat-head{padding-top:calc(10px + env(safe-area-inset-top,0px))}
+ #chatOverlay.qc-compose-open #chatForm{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+ #chatOverlay .chat-bubble.menu-open .chat-actions{display:none!important}
+ #qcMobileActionSheet{position:absolute;inset:auto 0 0 0;z-index:100;display:flex;flex-direction:column;gap:6px;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));background:#fff8f1;border:1px solid #d9b9a8;border-radius:20px 20px 0 0;box-shadow:0 -8px 28px #43271e33;max-height:55%;overflow:auto}
+ #qcMobileActionSheet[hidden]{display:none!important}
+ #qcMobileActionSheet button{width:100%;text-align:left;padding:12px 14px;border:1px solid #e4cabb;border-radius:12px;background:#fffaf5;color:#563b32;font-size:15px}
+ #qcMobileActionSheet .qc-sheet-close{background:#8d454a;color:white}
+}
+@media(min-width:601px){#qcMobileActionSheet{display:none!important}}
+</style>
+<script id="qc-final-design-js">
+(()=>{
+ const $=id=>document.getElementById(id), overlay=$('chatOverlay'), msgs=$('chatMessages'); if(!overlay||!msgs)return;
+ // Use mobile bottom sheet for the existing long-press action buttons; desktop retains floating actions.
+ let sheet=$('qcMobileActionSheet'); if(!sheet){sheet=document.createElement('div');sheet.id='qcMobileActionSheet';sheet.hidden=true;sheet.innerHTML='<button class="qc-sheet-close" type="button">Close options</button>';overlay.querySelector('.chat-shell')?.appendChild(sheet)}
+ const closeSheet=()=>{sheet.hidden=true;sheet.querySelectorAll('button[data-act]').forEach(b=>b.remove());document.querySelectorAll('#chatMessages .chat-bubble.menu-open').forEach(b=>b.classList.remove('menu-open'))};
+ sheet.querySelector('.qc-sheet-close').addEventListener('click',closeSheet);
+ const originalLongPress=window.__qcLongPressSheetBound;
+ if(!originalLongPress){window.__qcLongPressSheetBound=true;let timer=null,target=null;
+  msgs.addEventListener('pointerdown',e=>{if(innerWidth>600)return;const bubble=e.target.closest('.chat-bubble');if(!bubble||e.target.closest('button'))return;target=bubble;clearTimeout(timer);timer=setTimeout(()=>{document.querySelectorAll('#chatMessages .chat-bubble.menu-open').forEach(x=>x.classList.remove('menu-open'));bubble.classList.add('menu-open');sheet.querySelectorAll('button[data-act]').forEach(b=>b.remove());bubble.querySelectorAll('.chat-actions button[data-act]').forEach(src=>{const b=document.createElement('button');b.type='button';b.dataset.act=src.dataset.act;b.dataset.id=src.dataset.id;b.textContent=src.textContent;b.addEventListener('click',()=>{closeSheet();src.click()});sheet.appendChild(b)});sheet.hidden=false;},430);});
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>msgs.addEventListener(ev,()=>clearTimeout(timer)));
+  msgs.addEventListener('contextmenu',e=>{if(innerWidth>600)return;const bubble=e.target.closest('.chat-bubble');if(!bubble)return;e.preventDefault();clearTimeout(timer);document.querySelectorAll('#chatMessages .chat-bubble.menu-open').forEach(x=>x.classList.remove('menu-open'));bubble.classList.add('menu-open');sheet.querySelectorAll('button[data-act]').forEach(b=>b.remove());bubble.querySelectorAll('.chat-actions button[data-act]').forEach(src=>{const b=document.createElement('button');b.type='button';b.dataset.act=src.dataset.act;b.dataset.id=src.dataset.id;b.textContent=src.textContent;b.addEventListener('click',()=>{closeSheet();src.click()});sheet.appendChild(b)});sheet.hidden=false});
+ }
+ // Reply opens composer first; the original Reply handler still sets the quoted message.
+ $('qcFloatingReply')?.addEventListener('click',()=>{overlay.classList.remove('qc-compose-closed');overlay.classList.add('qc-compose-open');$('chatForm')?.classList.remove('hidden');setTimeout(()=>{$('chatInput')?.focus()},100)});
+ // Close options when chat closes or user taps outside the sheet.
+ $('chatClose')?.addEventListener('click',closeSheet);overlay.addEventListener('click',e=>{if(e.target===overlay)closeSheet()});
+ // Preserve scroll position when loading/rendering and keep the last message visible only if already near bottom.
+ let wasNearBottom=true;msgs.addEventListener('scroll',()=>{wasNearBottom=msgs.scrollHeight-msgs.scrollTop-msgs.clientHeight<100},{passive:true});
+ const oldRender=window.qcChatRender;if(typeof oldRender==='function'&&!window.__qcRenderWrapped){window.__qcRenderWrapped=true;window.qcChatRender=function(){const near=msgs.scrollHeight-msgs.scrollTop-msgs.clientHeight<120;oldRender.apply(this,arguments);if(near)msgs.scrollTop=msgs.scrollHeight}}
+})();
+</script>
+
+
+<style id="qc-final-reference-layout">
+/* Reference-aligned chat layout: retain the original website and PIN flow. */
+#chatOverlay{padding:0!important;background:#f6e9df!important;color:#4c3028!important}
+#chatOverlay .chat-shell{width:100%!important;height:100%!important;height:100dvh!important;max-height:none!important;border-radius:0!important;border:0!important;box-shadow:none!important;background:#fff8f1!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+#chatOverlay .chat-head{position:relative!important;z-index:4;display:flex!important;align-items:center!important;min-height:76px!important;padding:12px 16px!important;background:linear-gradient(120deg,#f4dfd0,#f8e8dc)!important;border-bottom:1px solid #edcabb!important}
+#chatOverlay .chat-head h2{font-family:Georgia,serif!important;font-size:22px!important;color:#4a2d25!important}
+#chatOverlay .chat-head .chat-sub{font-size:12px!important;color:#98796d!important}
+#chatOverlay .chat-head>div{flex:1;min-width:0}
+#qcChatBack{border:0;background:transparent;color:#4b2b24;font-size:28px;line-height:1;width:32px;height:38px;cursor:pointer;margin-right:8px}
+#qcChatLock{border:1px solid #e6c7b6;background:#fff8f2;border-radius:22px;padding:9px 12px;font-size:17px;margin-right:6px;color:#5b352c;cursor:pointer}
+#chatOverlay #chatClose{border:1px solid #e6c7b6!important;background:#fff8f2!important;border-radius:22px!important;padding:9px 13px!important;color:#5b352c!important}
+#chatOverlay .chat-tools,#chatOverlay .chat-search-wrap{display:none!important}
+#chatOverlay #chatStatus{flex:0 0 auto!important;padding:4px 12px!important;min-height:22px!important;background:rgba(255,250,245,.85)!important;color:#98796d!important;font-size:11px!important;border:0!important}
+#chatOverlay #chatMessages{position:relative;flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;padding:16px 14px 24px!important;gap:9px!important;background-color:#fbf0e8!important;background-image:radial-gradient(ellipse at 15% 20%,rgba(229,174,164,.24),transparent 35%),radial-gradient(ellipse at 80% 55%,rgba(216,160,151,.22),transparent 38%),radial-gradient(ellipse at 40% 90%,rgba(247,215,196,.55),transparent 40%)!important;background-size:cover!important}
+#chatOverlay .chat-bubble{max-width:min(82%,440px)!important;margin:3px 0!important;padding:10px 12px!important;border-radius:16px!important;box-shadow:0 1px 2px rgba(100,60,45,.06)!important;line-height:1.35!important}
+#chatOverlay .chat-bubble.mine{background:#f3d9cd!important;border:1px solid #edc8b9!important}
+#chatOverlay .chat-bubble:not(.mine){background:#fffdf9!important;border:1px solid #f0ded2!important}
+#chatOverlay .chat-compose{display:none!important;flex:0 0 auto!important;align-items:center!important;gap:7px!important;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px))!important;background:#fff8f1!important;border-top:1px solid #efdbce!important}
+#chatOverlay.qc-composer-open .chat-compose{display:flex!important}
+#chatOverlay #chatInput{min-width:0!important;flex:1!important;border:1px solid #e9cdbd!important;border-radius:24px!important;background:#fff!important;padding:12px 14px!important;font-size:16px!important;max-height:100px!important}
+#chatOverlay .chat-compose .chat-btn{min-height:42px!important;border-radius:24px!important;border:1px solid #e8c6b5!important;background:#fff8f2!important;color:#5b382e!important}
+#qcFloatingReply{position:absolute;z-index:8;left:10px;top:50%;transform:translateY(-50%);width:58px;min-height:68px;border:0;border-radius:20px;background:#7b3e3e;color:#fff8f2;box-shadow:0 4px 14px #4b2a2a40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13px;cursor:pointer}
+#chatOverlay.qc-composer-open #qcFloatingReply{display:none}
+#qcHoldMenu{position:fixed;z-index:99999;display:none;min-width:170px;max-width:90vw;padding:8px;border-radius:16px;background:#fff9f3;border:1px solid #e6c6b6;box-shadow:0 12px 35px #48291f40;color:#50342b}
+#qcHoldMenu button{display:block;width:100%;padding:10px 12px;text-align:left;border:0;border-radius:9px;background:transparent;color:inherit;font-size:14px}
+#qcHoldMenu button:active{background:#f4dfd3}
+#qcMobileActions{display:none}
+@media(max-width:600px){
+ #chatOverlay .chat-head{padding:calc(8px + env(safe-area-inset-top,0px)) 10px 9px!important;min-height:64px!important}
+ #chatOverlay .chat-head h2{font-size:19px!important}
+ #chatOverlay #chatMessages{padding:10px 9px calc(18px + env(safe-area-inset-bottom,0px))!important;gap:7px!important}
+ #chatOverlay .chat-bubble{max-width:86%!important;padding:9px 10px!important}
+ #chatOverlay.qc-composer-open .chat-compose{padding:7px 8px calc(7px + env(safe-area-inset-bottom,0px))!important}
+ #qcHoldMenu{display:none!important}
+ #qcMobileActions{position:fixed;z-index:100000;left:0;right:0;bottom:0;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));background:#fff8f2;border-radius:20px 20px 0 0;box-shadow:0 -8px 30px #40251e35;display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ #qcMobileActions.open{display:grid}
+ #qcMobileActions button{border:1px solid #e7c6b5;background:#fffdf9;color:#55362d;border-radius:12px;padding:12px 4px}
+}
+</style>
+<script id="qc-final-reference-behaviour">
+(function(){
+ const overlay=document.getElementById('chatOverlay'); if(!overlay)return;
+ const head=overlay.querySelector('.chat-head'), title=head&&head.querySelector('h2'), sub=document.getElementById('chatPresence'), msgs=document.getElementById('chatMessages'), form=document.getElementById('chatForm'), input=document.getElementById('chatInput');
+ if(title) title.textContent='Asia ♡';
+ if(head){
+   if(!document.getElementById('qcChatBack')){const b=document.createElement('button');b.id='qcChatBack';b.type='button';b.setAttribute('aria-label','Back to home');b.textContent='‹';head.insertBefore(b,head.firstElementChild);b.addEventListener('click',()=>{if(typeof qcCloseChat==='function')qcCloseChat();});}
+   if(!document.getElementById('qcChatLock')){const b=document.createElement('button');b.id='qcChatLock';b.type='button';b.textContent='🔒';b.title='Lock website';const close=document.getElementById('chatClose');head.insertBefore(b,close);b.addEventListener('click',()=>{if(typeof lockWebsite==='function')lockWebsite();else if(typeof qcCloseChat==='function')qcCloseChat();});}
+ }
+ if(sub){sub.textContent='A private corner for two · just us ♡ · checking status…';}
+ let replyBtn=document.getElementById('qcFloatingReply');
+ if(!replyBtn){replyBtn=document.createElement('button');replyBtn.id='qcFloatingReply';replyBtn.type='button';replyBtn.innerHTML='<span style="font-size:25px">↶</span><span>Reply</span>';overlay.querySelector('.chat-shell').appendChild(replyBtn);}
+ const openComposer=()=>{overlay.classList.add('qc-composer-open');setTimeout(()=>{if(input){input.focus({preventScroll:true});try{msgs.scrollTop=msgs.scrollHeight}catch(e){} }},120);};
+ const closeComposer=()=>{overlay.classList.remove('qc-composer-open');if(document.activeElement===input)input.blur();};
+ replyBtn.addEventListener('click',openComposer);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('qc-composer-open'))closeComposer();});
+ const close=document.getElementById('chatClose'); if(close)close.addEventListener('click',closeComposer,true);
+ // Keep the composer hidden whenever chat opens, but allow it to be reopened via Reply.
+ const mo=new MutationObserver(()=>{if(!overlay.classList.contains('hidden')&&!overlay.classList.contains('qc-composer-open')){if(form)form.style.display='';}});
+ mo.observe(overlay,{attributes:true,attributeFilter:['class']});
+ // Long press actions: preserve existing message action handlers where available.
+ let holdTimer=null, held=null;
+ let menu=document.getElementById('qcHoldMenu');
+ if(!menu){menu=document.createElement('div');menu.id='qcHoldMenu';menu.innerHTML='<button data-qact="reply">↩ Reply</button><button data-qact="react">♡ React</button><button data-qact="edit">✎ Edit</button><button data-qact="pin">📌 Pin / Unpin</button><button data-qact="copy">▣ Copy text</button><button data-qact="delete">⌫ Delete</button>';document.body.appendChild(menu);}
+ let mobile=document.getElementById('qcMobileActions');
+ if(!mobile){mobile=document.createElement('div');mobile.id='qcMobileActions';mobile.innerHTML='<button data-qact="reply">↩ Reply</button><button data-qact="react">♡ React</button><button data-qact="edit">✎ Edit</button><button data-qact="pin">📌 Pin/Unpin</button><button data-qact="copy">▣ Copy</button><button data-qact="delete">⌫ Delete</button>';document.body.appendChild(mobile);}
+ function showMenu(el,x,y){held=el;const isMobile=matchMedia('(max-width:600px)').matches;if(isMobile){mobile.classList.add('open');return;}menu.style.display='block';const r=el.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(x||r.left,innerWidth-190))+'px';menu.style.top=Math.max(8,Math.min(y||r.top,innerHeight-310))+'px';}
+ function hideMenu(){menu.style.display='none';mobile.classList.remove('open');held=null;}
+ msgs.addEventListener('pointerdown',e=>{const b=e.target.closest('.chat-bubble');if(!b)return;clearTimeout(holdTimer);holdTimer=setTimeout(()=>showMenu(b,e.clientX,e.clientY),520);});
+ ['pointerup','pointercancel','pointermove'].forEach(n=>msgs.addEventListener(n,()=>clearTimeout(holdTimer),{passive:true}));
+ msgs.addEventListener('contextmenu',e=>{const b=e.target.closest('.chat-bubble');if(!b)return;e.preventDefault();showMenu(b,e.clientX,e.clientY);});
+ function findMessageId(el){return el&&(el.dataset.id||el.getAttribute('data-message-id')||el.querySelector('[data-id]')?.dataset.id);}
+ async function action(act){
+  if(!held)return;const bubble=held,id=findMessageId(bubble),text=(bubble.innerText||'').replace(/\n.*$/s,'').trim();
+  hideMenu();
+  try{
+   if(act==='copy'){await navigator.clipboard.writeText(text);return;}
+   if(act==='reply'){openComposer();const m=Array.isArray(window.qcChatRows)?window.qcChatRows.find(x=>x.id===id):null;if(m&&typeof window.qcChatSetReply==='function')window.qcChatSetReply(m);else if(m&&typeof qcChatSetReply==='function')qcChatSetReply(m);return;}
+   if(act==='react'){const emoji=prompt('Reaction emoji enter karo','❤️');if(emoji&&id&&typeof qcClient!=='undefined'&&typeof qcChatUser!=='undefined'){await qcClient.from('qc_chat_reactions').insert({message_id:id,user_id:qcChatUser.id,emoji});}return;}
+   if(act==='edit'){if(typeof qcChatUser==='undefined'||!id)return;const m=qcChatRows.find(x=>x.id===id);if(!m||m.sender_id!==qcChatUser.id)return;const next=prompt('Message edit karo',m.message_text||'');if(next!==null){const {error}=await qcClient.from('qc_chat_messages').update({message_text:next,is_edited:true,updated_at:new Date().toISOString()}).eq('id',id).eq('sender_id',qcChatUser.id);if(error)throw error;}return;}
+   if(act==='pin'){if(typeof qcChatUser==='undefined'||qcChatUser.id!== '807c1735-5e4a-4402-843a-61d7767ff043')return;const m=qcChatRows.find(x=>x.id===id);if(m){const {error}=await qcClient.from('qc_chat_messages').update({is_pinned:!m.is_pinned,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;}return;}
+   if(act==='delete'){if(typeof qcChatUser==='undefined'||qcChatUser.id!=='807c1735-5e4a-4402-843a-61d7767ff043'||!id)return;if(confirm('Delete this message for everyone?')){const {error}=await qcClient.from('qc_chat_messages').update({is_deleted_for_everyone:true,message_text:'This message was deleted.',media_path:null,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;}return;}
+  }catch(err){if(typeof chatStatus!=='undefined')chatStatus.textContent='Action failed: '+(err.message||'check permissions');}
+ }
+ [menu,mobile].forEach(el=>el.addEventListener('click',e=>{const b=e.target.closest('[data-qact]');if(b)action(b.dataset.qact)}));
+ document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target)&&!mobile.contains(e.target)&&!e.target.closest('.chat-bubble'))hideMenu();});
+ // The existing media/voice buttons stay available only through Reply; their original handlers are retained.
+ const oldForm=form;
+ if(oldForm){oldForm.addEventListener('submit',()=>{setTimeout(()=>{if(input&&!input.value.trim())closeComposer()},80);});}
+ // Status label is explicit about the best available state rather than pretending presence is live.
+ if(sub){const update=()=>{if(!navigator.onLine){sub.textContent='Offline · last seen unavailable';}else if(typeof qcChatUser!=='undefined'&&qcChatUser){sub.textContent='Private chat · connected ♡';}};window.addEventListener('online',update);window.addEventListener('offline',update);}
+ // Hide search completely and remove it from tab order; original renderer remains otherwise intact.
+ const search=document.getElementById('chatSearch');if(search){search.value='';search.tabIndex=-1;search.setAttribute('aria-hidden','true');}
+})();
+</script>
+
+
+<style id="qc-composer-controls">
+#chatOverlay .chat-compose #qcComposerCamera,#chatOverlay .chat-compose #qcComposerMic{flex:0 0 42px;width:42px;height:42px;border-radius:50%!important;padding:0!important;font-size:19px!important}
+#chatOverlay .chat-compose #qcComposerSend{flex:0 0 auto;padding:8px 13px!important;background:#9d5a59!important;color:#fff!important;border-color:#9d5a59!important}
+</style>
+<script id="qc-composer-controls-script">
+(function(){
+ const overlay=document.getElementById('chatOverlay'),form=document.getElementById('chatForm');
+ if(!overlay||!form)return;
+ const input=document.getElementById('chatInput');
+ if(!document.getElementById('qcComposerCamera')){
+  const camera=document.createElement('button');camera.type='button';camera.id='qcComposerCamera';camera.className='chat-btn';camera.title='Photo or video';camera.textContent='▣';
+  const mic=document.createElement('button');mic.type='button';mic.id='qcComposerMic';mic.className='chat-btn';mic.title='Record voice';mic.textContent='🎙';
+  const send=form.querySelector('button[type="submit"]');if(send){send.id='qcComposerSend';send.textContent='➤';send.title='Send message';}
+  form.insertBefore(camera,input);form.insertBefore(mic,send||null);
+  camera.addEventListener('click',()=>{const f=document.getElementById('chatFileInput');if(f)f.click();});
+  mic.addEventListener('click',()=>{const old=document.getElementById('chatVoiceBtn');if(old)old.click();else alert('Voice recording handler unavailable in this browser session.');});
+ }
+})();
 </script>
 
 </body></html>
