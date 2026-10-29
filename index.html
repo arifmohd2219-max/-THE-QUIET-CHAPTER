@@ -495,26 +495,12 @@ function qcChatRender(){
 }
 function qcChatSetReply(m){qcChatReplyTo=m;document.getElementById('chatReplyBar').classList.toggle('hidden',!m);document.getElementById('chatReplyText').textContent=m?'Replying to: '+((m.message_text||'Media message').slice(0,100)):'Replying…';document.getElementById('chatInput').focus()}
 async function qcChatSignedUrl(path){const {data,error}=await qcClient.storage.from(QC_CHAT_BUCKET).createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
-// Read receipts: when this account opens/views chat, mark the other person's messages as read.
-async function qcMarkIncomingRead(rows=qcChatRows){
- if(!qcChatUser || !Array.isArray(rows)) return;
- const ids=rows.filter(m=>m && m.sender_id!==qcChatUser.id && !m.read_at && !m.is_deleted_for_everyone).map(m=>m.id);
- if(!ids.length) return;
- const stamp=new Date().toISOString();
- try{
-  const {data,error}=await qcClient.from('qc_chat_messages').update({delivered_at:stamp,read_at:stamp}).in('id',ids).select('id,delivered_at,read_at');
-  if(error){console.warn('Read receipt update blocked:',error.message);chatStatus.textContent='Read receipts need Supabase UPDATE policy for both chat participants.';return;}
-  const updated=new Map((data||[]).map(x=>[x.id,x]));
-  qcChatRows=qcChatRows.map(m=>updated.has(m.id)?{...m,...updated.get(m.id)}:m);
-  qcChatRender();
- }catch(err){console.warn('Could not mark messages read:',err)}
-}
 async function openQcChat(){
  if(!window.__qcAuthenticated){alert('Pehle login karo.');return}chatOverlay.classList.remove('hidden');document.body.classList.add('chat-open');chatStatus.textContent='Loading messages…';
  try{const {data:{user},error:ue}=await qcClient.auth.getUser();if(ue||!user)throw new Error('Login session nahi mili.');if(!QC_CHAT_PARTICIPANTS.includes(user.id))throw new Error('Is private chat ka access allowed nahi hai.');qcChatUser=user;
  const {data,error}=await qcClient.from('qc_chat_messages').select('*').order('created_at',{ascending:true}).limit(300);if(error)throw error;qcChatRows=data||[];
- for(const m of qcChatRows){if(m.media_path){try{m.media_url=await qcChatSignedUrl(m.media_path)}catch(e){m.media_url=''}}}qcChatRender();await qcMarkIncomingRead();chatStatus.textContent='';
- if(qcChatChannel)await qcClient.removeChannel(qcChatChannel);qcChatChannel=qcClient.channel('qc-private-chat').on('postgres_changes',{event:'*',schema:'public',table:'qc_chat_messages'},async payload=>{if(payload.eventType==='INSERT'&&!qcChatRows.some(x=>x.id===payload.new.id)){const row=payload.new;if(row.media_path){try{row.media_url=await qcChatSignedUrl(row.media_path)}catch(e){row.media_url=''}}qcChatRows.push(row)}else if(payload.eventType==='UPDATE')qcChatRows=qcChatRows.map(x=>x.id===payload.new.id?{...payload.new,media_url:x.media_url}:x);else if(payload.eventType==='DELETE')qcChatRows=qcChatRows.filter(x=>x.id!==payload.old.id);qcChatRows.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));if(payload.eventType==='INSERT'&&payload.new.sender_id!==qcChatUser?.id){await qcMarkIncomingRead([payload.new]);}else{qcChatRender()}}).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')chatStatus.textContent='Live connection unavailable; refresh chat to reload.'});
+ for(const m of qcChatRows){if(m.media_path){try{m.media_url=await qcChatSignedUrl(m.media_path)}catch(e){m.media_url=''}}}qcChatRender();chatStatus.textContent='Private chat · realtime connected when available ♡';
+ if(qcChatChannel)await qcClient.removeChannel(qcChatChannel);qcChatChannel=qcClient.channel('qc-private-chat').on('postgres_changes',{event:'*',schema:'public',table:'qc_chat_messages'},async payload=>{if(payload.eventType==='INSERT'&&!qcChatRows.some(x=>x.id===payload.new.id)){const row=payload.new;if(row.media_path){try{row.media_url=await qcChatSignedUrl(row.media_path)}catch(e){row.media_url=''}}qcChatRows.push(row)}else if(payload.eventType==='UPDATE')qcChatRows=qcChatRows.map(x=>x.id===payload.new.id?{...payload.new,media_url:x.media_url}:x);else if(payload.eventType==='DELETE')qcChatRows=qcChatRows.filter(x=>x.id!==payload.old.id);qcChatRows.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));qcChatRender()}).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')chatStatus.textContent='Live connection unavailable; refresh chat to reload.'});
  }catch(e){chatStatus.textContent='Chat setup error: '+(e.message||'Unknown error');chatMessages.innerHTML='<div style="padding:18px;line-height:1.6">Database access check failed: '+qcChatEscape(e.message||'Unknown error')+'</div>'}
 }
 async function qcChatSend(message,type='text',mediaPath=null){if(!qcChatUser)throw new Error('Login session nahi mili.');const payload={sender_id:qcChatUser.id,message_text:message||'',message_type:type,media_path:mediaPath,reply_to:qcChatReplyTo?.id||null};const {data,error}=await qcClient.from('qc_chat_messages').insert(payload).select().single();if(error)throw error;if(!qcChatRows.some(x=>x.id===data.id))qcChatRows.push(data);qcChatReplyTo=null;document.getElementById('chatReplyBar').classList.add('hidden');qcChatRender()}
@@ -659,12 +645,5 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
  const oldRender=window.qcChatRender;if(typeof oldRender==='function'&&!window.__qcRenderWrapped){window.__qcRenderWrapped=true;window.qcChatRender=function(){const near=msgs.scrollHeight-msgs.scrollTop-msgs.clientHeight<120;oldRender.apply(this,arguments);if(near)msgs.scrollTop=msgs.scrollHeight}}
 })();
 </script>
-
-<style id="qc-compact-profile-header-fix">
-/* Compact profile header: keep identity, online/last-seen and the action buttons only. */
-#chatOverlay .chat-subtitle, #chatOverlay .profile-tagline, #chatOverlay .profile-description,
-#chatOverlay .profile-extra, #chatOverlay .profile-status-detail { display:none !important; }
-#chatOverlay #chatStatus { display:none !important; }
-</style>
 
 </body></html>
