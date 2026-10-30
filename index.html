@@ -880,16 +880,35 @@ if (messages) {
 document.addEventListener('visibilitychange', scheduleMarkRead);
 window.addEventListener('online', scheduleMarkRead);
 setTimeout(scheduleMarkRead, 300); // Persist last-seen locally for fallback display. True cross-account status uses Supabase Presence.
- const seenKey='qc-last-seen-v1';function updateSeen(){try{if(!overlay.classList.contains('hidden')&&document.visibilityState==='visible'&&navigator.onLine){localStorage.setItem(seenKey,JSON.stringify({at:new Date().toISOString()}));const el=$('qcPresence');if(el)el.textContent=' · Online'}else{const el=$('qcPresence');if(el){const v=JSON.parse(localStorage.getItem(seenKey)||'null');el.textContent=v?.at?' · Last seen '+new Date(v.at).toLocaleString():' · Offline'}}}catch(_){}}
- window.addEventListener('offline',updateSeen);window.addEventListener('online',updateSeen);document.addEventListener('visibilitychange',updateSeen);setInterval(updateSeen,15000);
- // Profile editor: UI persists name/photo locally. Cross-account sync requires the SQL profile table described in the companion notes.
- function addProfileEditor(){const head=overlay.querySelector('.chat-head');if(!head||$('qcProfileEdit'))return;const b=document.createElement('button');b.id='qcProfileEdit';b.type='button';b.textContent='Edit profile';b.title='Edit chat display name and photo';head.append(b);const modal=document.createElement('div');modal.id='qcProfileModal';modal.hidden=true;modal.innerHTML='<div class="qc-profile-card"><h3>Edit chat profile</h3><label>Display name<input id="qcProfileName" maxlength="40" placeholder="Asia ♡"></label><label>Profile photo<input id="qcProfilePhoto" type="file" accept="image/*"></label><img id="qcProfilePreview" alt="Profile preview" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:none"><div><button id="qcProfileSave" type="button">Save</button><button id="qcProfileCancel" type="button">Cancel</button></div><small>Name/photo save on this browser. Shared cross-account profile sync needs the profile-table setup.</small></div>';overlay.querySelector('.chat-shell')?.append(modal);const key='qc-chat-profile-local';let photoData='';try{const saved=JSON.parse(localStorage.getItem(key)||'{}');$('qcProfileName').value=saved.name||'Asia ♡';if(saved.photo){photoData=saved.photo;$('qcProfilePreview').src=photoData;$('qcProfilePreview').style.display='block'}}catch(_){}b.onclick=()=>{modal.hidden=false};$('qcProfileCancel').onclick=()=>modal.hidden=true;$('qcProfilePhoto').onchange=()=>{const f=$('qcProfilePhoto').files?.[0];if(!f)return;if(f.size>2*1024*1024){alert('Photo 2 MB se chhoti rakho.');return}const rd=new FileReader();rd.onload=()=>{photoData=rd.result;$('qcProfilePreview').src=photoData;$('qcProfilePreview').style.display='block'};rd.readAsDataURL(f)};$('qcProfileSave').onclick=()=>{const name=$('qcProfileName').value.trim()||'Asia ♡';localStorage.setItem(key,JSON.stringify({name,photo:photoData}));const title=head.querySelector('.chat-title,h2,h3,.chat-name');if(title)title.textContent=name;modal.hidden=true;const status=$('chatStatus');if(status)status.textContent='Profile saved on this browser. For both accounts, set up shared profile table.'}}
+ // Presence status is owned by the Supabase Realtime channel above. Do not show this browser's local timestamp as the other person's last-seen time.
+ function updateLocalConnectivity(){const el=$('qcPresence');if(!el)return;if(!navigator.onLine)el.textContent=' · Offline (connection)';}
+ window.addEventListener('offline',updateLocalConnectivity);window.addEventListener('online',()=>{if(presenceChannel)startPresence()});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&presenceChannel)startPresence()});
+ // Profile editor: persist and restore name/photo in the chat header on this browser.
+ function addProfileEditor(){
+  const head=overlay.querySelector('.chat-head'); if(!head||$('qcProfileEdit'))return;
+  const key='qc-chat-profile-local';
+  const identity=document.createElement('div'); identity.id='qcProfileIdentity';
+  identity.innerHTML='<img id="qcProfileHeaderPhoto" alt="Profile photo" hidden><span id="qcProfileHeaderName">Asia ♡</span>';
+  const title=head.querySelector('h2'); if(title){title.insertAdjacentElement('beforebegin',identity);title.style.display='none'}else head.prepend(identity);
+  const b=document.createElement('button');b.id='qcProfileEdit';b.type='button';b.textContent='Edit profile';b.title='Edit chat display name and photo';head.append(b);
+  const modal=document.createElement('div');modal.id='qcProfileModal';modal.hidden=true;
+  modal.innerHTML='<div class="qc-profile-card"><h3>Edit chat profile</h3><label>Display name<input id="qcProfileName" maxlength="40" placeholder="Asia ♡"></label><label>Profile photo<input id="qcProfilePhoto" type="file" accept="image/*"></label><img id="qcProfilePreview" alt="Profile preview" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:none"><div><button id="qcProfileSave" type="button">Save</button><button id="qcProfileCancel" type="button">Cancel</button></div><small>Name/photo are saved on this browser only. Cross-device sharing requires a shared profile table.</small></div>';
+  overlay.querySelector('.chat-shell')?.append(modal);let photoData='';
+  const applyProfile=(saved={})=>{const n=$('qcProfileHeaderName'),img=$('qcProfileHeaderPhoto');if(n)n.textContent=saved.name||'Asia ♡';if(img){if(saved.photo){img.src=saved.photo;img.hidden=false}else{img.removeAttribute('src');img.hidden=true}}};
+  try{const saved=JSON.parse(localStorage.getItem(key)||'{}');$('qcProfileName').value=saved.name||'Asia ♡';photoData=saved.photo||'';if(photoData){$('qcProfilePreview').src=photoData;$('qcProfilePreview').style.display='block'}applyProfile(saved)}catch(_){applyProfile()}
+  b.onclick=()=>{let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}$('qcProfileName').value=saved.name||'Asia ♡';photoData=saved.photo||'';if(photoData){$('qcProfilePreview').src=photoData;$('qcProfilePreview').style.display='block'}else $('qcProfilePreview').style.display='none';modal.hidden=false};
+  $('qcProfileCancel').onclick=()=>modal.hidden=true;
+  $('qcProfilePhoto').onchange=()=>{const f=$('qcProfilePhoto').files?.[0];if(!f)return;if(f.size>2*1024*1024){alert('Photo 2 MB se chhoti rakho.');$('qcProfilePhoto').value='';return}const rd=new FileReader();rd.onload=()=>{photoData=rd.result;$('qcProfilePreview').src=photoData;$('qcProfilePreview').style.display='block'};rd.readAsDataURL(f)};
+  $('qcProfileSave').onclick=()=>{const saved={name:$('qcProfileName').value.trim()||'Asia ♡',photo:photoData};try{localStorage.setItem(key,JSON.stringify(saved));applyProfile(saved);modal.hidden=true;const status=$('chatStatus');if(status)status.textContent='Profile saved on this browser.'}catch(e){alert('Photo save nahi hui. Smaller image try karo.')}};
+ }
  new MutationObserver(addProfileEditor).observe(overlay,{childList:true,subtree:true});addProfileEditor();
 })();
 </script>
 
 
 <style id="qc-compact-header-final-fix">
+#qcProfileIdentity{display:flex;align-items:center;gap:8px;min-width:0;font:600 14px/1.2 Arial,sans-serif;color:#68473d}#qcProfileHeaderPhoto{width:34px;height:34px;flex:0 0 34px;object-fit:cover;border-radius:50%;border:2px solid #e7c6b4}#qcProfileHeaderName{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* Compact chat header: preserve existing controls and chat layout. */
 #chatOverlay .chat-head{display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:nowrap!important;min-height:64px!important;height:auto!important;padding:10px 14px!important;overflow:visible!important}
 #chatOverlay .chat-head>div:first-child{display:flex!important;flex:1 1 auto!important;min-width:0!important;align-items:center!important;gap:10px!important;flex-wrap:wrap!important}
