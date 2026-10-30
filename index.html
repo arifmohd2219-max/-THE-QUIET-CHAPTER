@@ -789,10 +789,97 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
  // Hook into chat renders without replacing original renderer.
  if(typeof window.qcChatRender==='function'){const old=window.qcChatRender;window.qcChatRender=function(){old();setTimeout(renderReactions,100)}}
  const messages=$('chatMessages');if(messages)new MutationObserver(()=>setTimeout(renderReactions,120)).observe(messages,{childList:true,subtree:true});
- // Mark incoming messages read when the chat is visible; outgoing status uses read_at for double ticks.
- async function markRead(){try{if(typeof qcClient==='undefined'||typeof qcChatUser==='undefined'||overlay.classList.contains('hidden'))return;const unread=(qcChatRows||[]).filter(m=>m.sender_id!==qcChatUser.id&&!m.read_at&&!m.is_deleted_for_everyone);if(!unread.length)return;const ids=unread.map(m=>m.id);const {error}=await qcClient.from('qc_chat_messages').update({read_at:new Date().toISOString(),delivered_at:new Date().toISOString()}).in('id',ids);if(!error){unread.forEach(m=>{m.read_at=new Date().toISOString();m.delivered_at=m.read_at});if(typeof qcChatRender==='function')qcChatRender()}}catch(_){}}
- if(messages)new MutationObserver(()=>markRead()).observe(messages,{childList:true,subtree:true});document.addEventListener('visibilitychange',markRead);
- // Persist last-seen locally for fallback display. True cross-account status uses Supabase Presence.
+// Mark incoming messages as read when the chat is visible.
+let qcMarkReadBusy = false;
+let qcMarkReadTimer = null;
+
+async function markRead() {
+  if (
+    qcMarkReadBusy ||
+    overlay.classList.contains('hidden') ||
+    document.visibilityState !== 'visible' ||
+    !navigator.onLine ||
+    !qcChatUser ||
+    !Array.isArray(qcChatRows) ||
+    !qcClient
+  ) return;
+
+  const ids = qcChatRows
+    .filter(m =>
+      m.sender_id !== qcChatUser.id &&
+      !m.read_at &&
+      !m.is_deleted_for_everyone
+    )
+    .map(m => m.id);
+
+  if (!ids.length) return;
+
+  qcMarkReadBusy = true;
+
+  try {
+    const { error } = await qcClient.rpc(
+      'qc_mark_messages_read',
+      { p_ids: ids }
+    );
+
+    if (error) throw error;
+
+    // Verify that the database actually updated read_at.
+    const { data, error: verifyError } = await qcClient
+      .from('qc_chat_messages')
+      .select('id, read_at')
+      .in('id', ids);
+
+    if (verifyError) throw verifyError;
+
+    const readStatus = new Map(
+      (data || []).map(m => [m.id, m.read_at])
+    );
+
+    qcChatRows = qcChatRows.map(m =>
+      readStatus.has(m.id)
+        ? { ...m, read_at: readStatus.get(m.id) }
+        : m
+    );
+
+    if (typeof qcChatRender === 'function') {
+      qcChatRender();
+    }
+
+    if (!(data || []).some(m => m.read_at)) {
+      console.warn(
+        '[THE QUIET CHAPTER] RPC completed, but read_at is still empty.'
+      );
+    }
+  } catch (err) {
+    console.error('[THE QUIET CHAPTER] markRead failed:', err);
+
+    const status = $('chatStatus');
+    if (status) {
+      status.textContent =
+        'Read status update failed: ' +
+        (err.message || 'Supabase error');
+    }
+  } finally {
+    qcMarkReadBusy = false;
+  }
+}
+
+function scheduleMarkRead() {
+  clearTimeout(qcMarkReadTimer);
+  qcMarkReadTimer = setTimeout(markRead, 250);
+}
+
+if (messages) {
+  new MutationObserver(scheduleMarkRead).observe(messages, {
+    childList: true,
+    subtree: true
+  });
+}
+
+document.addEventListener('visibilitychange', scheduleMarkRead);
+window.addEventListener('online', scheduleMarkRead);
+setTimeout(scheduleMarkRead, 300); // Persist last-seen locally for fallback display. True cross-account status uses Supabase Presence.
  const seenKey='qc-last-seen-v1';function updateSeen(){try{if(!overlay.classList.contains('hidden')&&document.visibilityState==='visible'&&navigator.onLine){localStorage.setItem(seenKey,JSON.stringify({at:new Date().toISOString()}));const el=$('qcPresence');if(el)el.textContent=' · Online'}else{const el=$('qcPresence');if(el){const v=JSON.parse(localStorage.getItem(seenKey)||'null');el.textContent=v?.at?' · Last seen '+new Date(v.at).toLocaleString():' · Offline'}}}catch(_){}}
  window.addEventListener('offline',updateSeen);window.addEventListener('online',updateSeen);document.addEventListener('visibilitychange',updateSeen);setInterval(updateSeen,15000);
  // Profile editor: UI persists name/photo locally. Cross-account sync requires the SQL profile table described in the companion notes.
