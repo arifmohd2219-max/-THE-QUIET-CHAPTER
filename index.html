@@ -582,13 +582,43 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
    $('qcVoiceDiscard')?.addEventListener('click',()=>{window.__qcPendingVoiceBlob=null;cleanup();status.textContent='Voice recording discarded.'});
    $('qcVoiceSend')?.addEventListener('click',async()=>{const blob=window.__qcPendingVoiceBlob;if(!blob)return;if(!qcChatUser && !window.__qcAuthenticated){status.textContent='Please unlock/login first.';return}const user=qcChatUser;if(!user){status.textContent='Chat session is not ready. Close and reopen chat, then try again.';return}const send=$('qcVoiceSend');send.disabled=true;try{const ext=blob.type.includes('mp4')?'m4a':'webm';const path=`chat/${user.id}/${Date.now()}_voice.${ext}`;const {error}=await qcClient.storage.from('private-memories').upload(path,blob,{upsert:false,contentType:blob.type||'audio/webm'});if(error)throw error;const {error:insertError}=await qcClient.from('qc_chat_messages').insert({sender_id:user.id,message_text:'Voice message',message_type:'voice',media_path:path,reply_to:window.qcChatReplyTo?.id||null});if(insertError)throw insertError;window.__qcPendingVoiceBlob=null;cleanup();status.textContent='Voice message sent ♡'}catch(err){status.textContent='Voice upload failed: '+(err.message||'Check private-memories bucket permissions')}finally{send.disabled=false}});
  }
- // Realtime presence uses Supabase Realtime Presence; no extra table needed.
- let presenceChannel=null,presenceTimer=null;
- async function startPresence(){try{if(!qcClient||!window.__qcAuthenticated)return;const {data:{user},error}=await qcClient.auth.getUser();if(error||!user||!['807c1735-5e4a-4402-843a-61d7767ff043','a16253ac-e839-4abd-8a7a-43643f3a06f3'].includes(user.id))return;qcChatUser=user;let label=$('qcPresence');if(!label){label=document.createElement('span');label.id='qcPresence';const sub=overlay.querySelector('.chat-sub')||overlay.querySelector('.chat-head');sub?.appendChild(label)}const other=user.id==='807c1735-5e4a-4402-843a-61d7767ff043'?'a16253ac-e839-4abd-8a7a-43643f3a06f3':'807c1735-5e4a-4402-843a-61d7767ff043';const channel=qcClient.channel('qc-private-presence',{config:{presence:{key:user.id}}});presenceChannel=channel;channel.on('presence',{event:'sync'},()=>{const state=channel.presenceState();const online=Object.keys(state).some(k=>k===other);label.textContent=online?' · Online':' · Offline';label.style.color=online?'#397b59':'#927166'}).subscribe(async st=>{if(st==='SUBSCRIBED'){await channel.track({user_id:user.id,online_at:new Date().toISOString(),last_seen:new Date().toISOString()})}});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&presenceChannel){presenceChannel.track({user_id:user.id,online_at:new Date().toISOString(),last_seen:new Date().toISOString()}).catch(()=>{})}})}catch(e){const label=$('qcPresence');if(label)label.textContent=' · Status unavailable'}}
- // Start when chat opens and retry after auth has initialized.
+ // Realtime online status + persistent last-seen timestamp (Supabase table: qc_user_presence).
+ let presenceChannel=null,presenceTimer=null,presenceStarting=false,presenceUserId=null;
+ const QC_PRESENCE_USERS=['807c1735-5e4a-4402-843a-61d7767ff043','a16253ac-e839-4abd-8a7a-43643f3a06f3'];
+ async function saveMyLastSeen(userId){
+  if(!qcClient||!userId||!navigator.onLine)return;
+  const {error}=await qcClient.from('qc_user_presence').upsert({user_id:userId,last_seen:new Date().toISOString()},{onConflict:'user_id'});
+  if(error)console.warn('[THE QUIET CHAPTER] Last-seen save failed:',error.message);
+ }
+ async function renderPresenceStatus(userId,other,label){
+  if(!label||!qcClient)return;
+  const state=presenceChannel?.presenceState?.()||{};
+  const online=Object.keys(state).some(k=>k===other);
+  if(online){label.textContent=' · Online';label.style.color='#397b59';return;}
+  const {data,error}=await qcClient.from('qc_user_presence').select('last_seen').eq('user_id',other).maybeSingle();
+  if(error){label.textContent=' · Offline';label.style.color='#927166';console.warn('[THE QUIET CHAPTER] Last-seen read failed:',error.message);return;}
+  if(data?.last_seen){const d=new Date(data.last_seen);const now=new Date();const sameDay=d.toDateString()===now.toDateString();const time=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});label.textContent=' · Last seen '+(sameDay?'today, ':'')+time;}
+  else label.textContent=' · Offline';
+  label.style.color='#927166';
+ }
+ async function startPresence(){
+  if(presenceStarting||presenceChannel||!qcClient||!window.__qcAuthenticated)return;
+  presenceStarting=true;
+  try{
+   const {data:{user},error}=await qcClient.auth.getUser();
+   if(error||!user||!QC_PRESENCE_USERS.includes(user.id))return;
+   qcChatUser=user;presenceUserId=user.id;
+   let label=$('qcPresence');if(!label){label=document.createElement('span');label.id='qcPresence';overlay.querySelector('.chat-head')?.appendChild(label);}
+   const other=user.id===QC_PRESENCE_USERS[0]?QC_PRESENCE_USERS[1]:QC_PRESENCE_USERS[0];
+   const channel=qcClient.channel('qc-private-presence',{config:{presence:{key:user.id}}});presenceChannel=channel;
+   channel.on('presence',{event:'sync'},()=>{renderPresenceStatus(user.id,other,label)});
+   channel.subscribe(async st=>{if(st==='SUBSCRIBED'){await saveMyLastSeen(user.id);await channel.track({user_id:user.id,online_at:new Date().toISOString()});await renderPresenceStatus(user.id,other,label);if(presenceTimer)clearInterval(presenceTimer);presenceTimer=setInterval(async()=>{if(document.visibilityState==='visible'&&navigator.onLine){await saveMyLastSeen(user.id);await renderPresenceStatus(user.id,other,label);}},30000);}});
+  }catch(e){const label=$('qcPresence');if(label)label.textContent=' · Status unavailable';console.warn('[THE QUIET CHAPTER] Presence error:',e.message)}finally{presenceStarting=false;}
+ }
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&presenceUserId){saveMyLastSeen(presenceUserId);if(presenceChannel)presenceChannel.track({user_id:presenceUserId,online_at:new Date().toISOString()}).catch(()=>{});startPresence();}});
  const openButton=document.querySelector('[onclick*="openQcChat"]');openButton?.addEventListener('click',()=>setTimeout(startPresence,500));
  const openObserver=new MutationObserver(()=>{if(!overlay.classList.contains('hidden'))startPresence()});openObserver.observe(overlay,{attributes:true,attributeFilter:['class']});
- window.addEventListener('beforeunload',()=>{if(presenceChannel&&qcClient)qcClient.removeChannel(presenceChannel)});
+ window.addEventListener('beforeunload',()=>{if(presenceTimer)clearInterval(presenceTimer);if(presenceChannel&&qcClient)qcClient.removeChannel(presenceChannel)});
 })();
 </script>
 
