@@ -466,7 +466,7 @@ async function openMediaGallery(){
  if(!window.__qcAuthenticated)return;
 
  mediaOverlay.classList.remove('hidden');
- mediaSay('Chat photos aur videos load ho rahe hain…');
+ mediaSay('Memories load ho rahi hain…');
 
  try{
   const {data:{user},error:userErr}=await qcClient.auth.getUser();
@@ -483,16 +483,17 @@ async function openMediaGallery(){
    ?'Dono accounts add kar sakte hain · Delete ka control tumhare paas hai'
    :'Tum photos/videos add kar sakte ho · Delete sirf owner kar sakta hai';
 
-  const {data,error}=await qcClient
+  // 1. Load photos/videos shared in Private Chat
+  const {data:chatData,error:chatError}=await qcClient
    .from('qc_chat_messages')
    .select('id,sender_id,message_text,message_type,media_path,created_at')
    .in('message_type',['image','video'])
    .not('media_path','is',null)
    .order('created_at',{ascending:false});
 
-  if(error)throw error;
+  if(chatError)throw chatError;
 
-  qcMediaItems=(data||[]).map(row=>({
+  const chatItems=(chatData||[]).map(row=>({
    id:row.id,
    message_id:row.id,
    name:row.media_path.split('/').pop(),
@@ -505,11 +506,66 @@ async function openMediaGallery(){
    }
   }));
 
+  // 2. Load separately uploaded Gallery media
+  const galleryUsers=[
+   '807c1735-5e4a-4402-843a-61d7767ff043',
+   'a16253ac-e839-4abd-8a7a-43643f3a06f3'
+  ];
+
+  let galleryItems=[];
+
+  for(const uid of galleryUsers){
+
+   const {data:files,error:listError}=await qcClient
+    .storage
+    .from(QC_MEDIA_BUCKET)
+    .list(`gallery/${uid}`,{
+     limit:1000,
+     sortBy:{column:'created_at',order:'desc'}
+    });
+
+   if(listError)throw listError;
+
+   const items=(files||[])
+    .filter(file=>file.name&&file.metadata)
+    .map(file=>{
+
+     const path=`gallery/${uid}/${file.name}`;
+     const mime=file.metadata?.mimetype||
+                file.metadata?.contentType||'';
+
+     const video=/^video\//i.test(mime)||
+      /\.(mp4|mov|webm|m4v|3gp)$/i.test(file.name);
+
+     return {
+      id:path,
+      message_id:null,
+      name:file.name,
+      path:path,
+      message_text:file.name,
+      message_type:video?'video':'image',
+      created_at:file.created_at||file.updated_at||null,
+      metadata:{
+       mimetype:mime||(video?'video/unknown':'image/unknown')
+      }
+     };
+    });
+
+   galleryItems.push(...items);
+  }
+
+  // 3. Combine both sources
+  qcMediaItems=[...chatItems,...galleryItems];
+
+  qcMediaItems.sort((a,b)=>
+   new Date(b.created_at||0)-new Date(a.created_at||0)
+  );
+
   await renderMediaGrid();
 
   mediaSay(qcMediaItems.length
-   ?`${qcMediaItems.length} chat photos/videos available ♡`
-   :'Abhi chat mein koi photo ya video nahi hai.');
+   ?`${qcMediaItems.length} memories available ♡`
+   :'Abhi koi memory nahi hai.');
 
   document.getElementById('mediaEmpty')
    .classList.toggle('hidden',qcMediaItems.length>0);
@@ -781,8 +837,10 @@ document.getElementById('mediaUploadInput').addEventListener('change',async e=>{
 
    const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
 
+   // Separate Gallery folder.
+   // This upload will NOT create a Private Chat message.
    const path=
-    `chat/${qcMediaUser.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safe}`;
+    `gallery/${qcMediaUser.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safe}`;
 
    const {error:uploadError}=await qcClient
     .storage
@@ -793,25 +851,6 @@ document.getElementById('mediaUploadInput').addEventListener('change',async e=>{
     });
 
    if(uploadError)throw uploadError;
-
-   const {error:insertError}=await qcClient
-    .from('qc_chat_messages')
-    .insert({
-     sender_id:qcMediaUser.id,
-     message_text:file.name,
-     message_type:file.type.startsWith('video/')?'video':'image',
-     media_path:path,
-     reply_to:null
-    });
-
-   if(insertError){
-
-    await qcClient.storage
-     .from(QC_MEDIA_BUCKET)
-     .remove([path]);
-
-    throw insertError;
-   }
 
    done++;
   }
@@ -830,10 +869,11 @@ document.getElementById('mediaUploadInput').addEventListener('change',async e=>{
  await openMediaGallery();
 
  if(done){
-  mediaSay(`${done} photo/video successfully add ho gayi ♡`);
+  mediaSay(`${done} photo/video Gallery mein successfully add ho gayi ♡`);
  }
 
 });
+
 async function openMediaViewer(index){
  if(!qcMediaItems.length)return;qcMediaIndex=index;mediaViewer.classList.remove('hidden');await renderMediaViewer();
 }
