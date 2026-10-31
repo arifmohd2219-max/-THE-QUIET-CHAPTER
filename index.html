@@ -1021,4 +1021,62 @@ setTimeout(scheduleMarkRead, 300); // Persist last-seen locally for fallback dis
  syncCloseVisibility();
 })();
 </script>
+
+<style id="qc-floating-keyboard-layout">
+/* Keep floating controls clear of the chat composer while the mobile keyboard is open. */
+body.qc-chat-keyboard-open #qcFloatingLock,
+body.qc-chat-keyboard-open #qcFloatingClose{
+  top:auto!important;
+  transform:none!important;
+}
+body.qc-chat-keyboard-open #qcFloatingLock{
+  bottom:var(--qc-floating-lock-bottom,120px)!important;
+}
+body.qc-chat-keyboard-open #qcFloatingClose{
+  bottom:var(--qc-floating-close-bottom,172px)!important;
+}
+body.qc-chat-keyboard-open #qcFloatingLock:active,
+body.qc-chat-keyboard-open #qcFloatingClose:active{transform:scale(.96)!important}
+</style>
+<script id="qc-floating-keyboard-behaviour">
+(function(){
+ const vv=window.visualViewport;
+ const input=document.getElementById('chatInput');
+ const overlay=document.getElementById('chatOverlay');
+ const lock=document.getElementById('qcFloatingLock');
+ const close=document.getElementById('qcFloatingClose');
+ if(!vv||!input||!overlay||!lock||!close)return;
+ let frame=0;
+ function updateFloatingForKeyboard(){
+  cancelAnimationFrame(frame);
+  frame=requestAnimationFrame(function(){
+   const chatOpen=!overlay.classList.contains('hidden');
+   const keyboardFocused=document.activeElement===input;
+   const keyboardHeight=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);
+   const keyboardOpen=chatOpen&&keyboardFocused&&keyboardHeight>120;
+   if(keyboardOpen){
+    const composer=document.querySelector('#chatOverlay .chat-compose');
+    const composerHeight=composer?composer.getBoundingClientRect().height:90;
+    const base=Math.ceil(keyboardHeight+composerHeight+12);
+    document.body.style.setProperty('--qc-floating-lock-bottom',base+'px');
+    document.body.style.setProperty('--qc-floating-close-bottom',(base+52)+'px');
+    document.body.classList.add('qc-chat-keyboard-open');
+   }else{
+    document.body.classList.remove('qc-chat-keyboard-open');
+    document.body.style.removeProperty('--qc-floating-lock-bottom');
+    document.body.style.removeProperty('--qc-floating-close-bottom');
+   }
+  });
+ }
+ vv.addEventListener('resize',updateFloatingForKeyboard);
+ vv.addEventListener('scroll',updateFloatingForKeyboard);
+ input.addEventListener('focus',updateFloatingForKeyboard);
+ input.addEventListener('blur',()=>setTimeout(updateFloatingForKeyboard,80));
+ overlay.addEventListener('transitionend',updateFloatingForKeyboard);
+ document.addEventListener('visibilitychange',updateFloatingForKeyboard);
+ window.addEventListener('orientationchange',()=>setTimeout(updateFloatingForKeyboard,180));
+ updateFloatingForKeyboard();
+})();
+</script>
+
 </body></html>
