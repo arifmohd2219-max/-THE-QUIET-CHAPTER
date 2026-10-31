@@ -84,7 +84,21 @@
 .media-video-thumb{width:100%;aspect-ratio:1/1;display:grid;place-items:center;background:linear-gradient(145deg,#ead9ed,#f7dce7);font-size:42px;color:#8c6287}
 .media-card-caption{padding:10px 11px 12px;font:12px/1.4 Arial,sans-serif;color:#76596f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .media-card .media-kind{position:absolute;top:8px;left:8px;padding:5px 7px;border-radius:20px;background:#fffdf0df;color:#79556d;font:10px Arial,sans-serif}
-.media-delete{position:absolute;top:7px;right:7px;width:30px;height:30px;border:0;border-radius:50%;background:#fffdf0ed;color:#a13c51;cursor:pointer;font:16px Arial,sans-serif}
+.media-delete{
+  position:absolute;
+  top:8px;
+  right:48px;
+  z-index:3;
+  width:30px;
+  height:30px;
+  border:0;
+  border-radius:50%;
+  background:#fffdf0ed;
+  color:#a13c51;
+  cursor:pointer;
+  font:16px Arial,sans-serif;
+  box-shadow:0 2px 9px #44223322;
+}
 .media-empty{text-align:center;padding:60px 18px;color:#9b7b92}.media-empty>span{font-size:46px;color:#e7a5c2}.media-empty h3{font-weight:normal;color:#76536d;margin:12px 0 7px}.media-empty p{font:13px/1.6 Arial,sans-serif}
 #mediaViewer{position:fixed;inset:0;z-index:50;background:rgba(25,17,31,.96);display:flex;align-items:center;justify-content:center;padding:65px 58px 82px}
 #mediaViewer.hidden{display:none!important}
@@ -452,8 +466,15 @@ async function openMediaGallery(){
   document.getElementById('mediaPermission').textContent=mediaIsOwner()?'Dono accounts add kar sakte hain · Delete ka control tumhare paas hai':'Tum photos/videos add kar sakte ho · Delete sirf owner kar sakta hai';
   const {data,error}=await qcClient.storage.from(QC_MEDIA_BUCKET).list('',{limit:500,sortBy:{column:'created_at',order:'desc'}});
   if(error)throw error;
-  qcMediaItems=(data||[]).filter(x=>x.name&&!x.name.startsWith('.')).map(x=>({name:x.name,created_at:x.created_at||null,metadata:x.metadata||{},id:x.id||x.name}));
-  await renderMediaGrid();mediaSay(qcMediaItems.length?`${qcMediaItems.length} memories · date-wise arranged. Heart se favourites save karo.`:'');
+qcMediaItems=(data||[])
+  .filter(x=>x.name && !x.name.startsWith('.') && x.id !== null && x.id !== undefined)
+  .map(x=>({
+    name:x.name,
+    created_at:x.created_at||null,
+    metadata:x.metadata||{},
+    id:x.id
+  }));
+    await renderMediaGrid();mediaSay(qcMediaItems.length?`${qcMediaItems.length} memories · date-wise arranged. Heart se favourites save karo.`:'');
   document.getElementById('mediaEmpty').classList.toggle('hidden',qcMediaItems.length>0);
  }catch(e){mediaSay('Gallery load nahi hui. Supabase bucket/policies check karo. '+(e.message||''));mediaGrid.innerHTML='';document.getElementById('mediaEmpty').classList.add('hidden')}
 }
