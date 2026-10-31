@@ -528,7 +528,17 @@ function qcChatRender(){
 function qcChatSetReply(m){qcChatReplyTo=m;document.getElementById('chatReplyBar').classList.toggle('hidden',!m);document.getElementById('chatReplyText').textContent=m?'Replying to: '+((m.message_text||'Media message').slice(0,100)):'Replying…';document.getElementById('chatInput').focus()}
 async function qcChatSignedUrl(path){const {data,error}=await qcClient.storage.from(QC_CHAT_BUCKET).createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
 async function openQcChat(){
- if(!window.__qcAuthenticated){alert('Pehle login karo.');return}chatOverlay.classList.remove('hidden');document.body.classList.add('chat-open');chatStatus.textContent='Loading messages…';
+ if(!window.__qcAuthenticated){alert('Pehle login karo.');return}
+ // Clear any keyboard-sized viewport left behind by the previous chat session.
+ const reopenInput=document.getElementById('chatInput');if(reopenInput)reopenInput.blur();
+ chatOverlay.style.height='';chatOverlay.style.top='';
+ document.body.classList.remove('qc-chat-keyboard-open');
+ document.body.style.removeProperty('--qc-floating-lock-bottom');document.body.style.removeProperty('--qc-floating-close-bottom');
+ chatOverlay.classList.remove('hidden');document.body.classList.add('chat-open');chatStatus.textContent='Loading messages…';
+ // Re-measure after the overlay becomes visible; mobile browsers settle viewport over a few frames.
+ const refreshChatViewport=()=>{if(!chatOverlay.classList.contains('hidden'))qcChatFitViewport()};
+ requestAnimationFrame(()=>{refreshChatViewport();requestAnimationFrame(refreshChatViewport)});
+ setTimeout(refreshChatViewport,120);setTimeout(refreshChatViewport,300);
  try{const {data:{user},error:ue}=await qcClient.auth.getUser();if(ue||!user)throw new Error('Login session nahi mili.');if(!QC_CHAT_PARTICIPANTS.includes(user.id))throw new Error('Is private chat ka access allowed nahi hai.');qcChatUser=user;
  const {data,error}=await qcClient.from('qc_chat_messages').select('*').order('created_at',{ascending:true}).limit(300);if(error)throw error;qcChatRows=data||[];
  for(const m of qcChatRows){if(m.media_path){try{m.media_url=await qcChatSignedUrl(m.media_path)}catch(e){m.media_url=''}}}qcChatRender();chatStatus.textContent='Private chat · realtime connected when available ♡';
@@ -1102,8 +1112,10 @@ setTimeout(scheduleMarkRead, 300); // Persist last-seen locally for fallback dis
   closeBtn.classList.toggle('qc-close-hidden',!(sectionIsOpen()&&!atEntry&&!atLock&&!atAuth));
  }
  closeBtn.addEventListener('click',function(){
-  overlayIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('hidden');});
-  document.body.classList.remove('chat-open');
+  overlayIds.forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('hidden');if(id==='chatOverlay'){el.style.height='';el.style.top='';}}});
+  const chatInput=document.getElementById('chatInput');if(chatInput)chatInput.blur();
+  document.body.classList.remove('chat-open','qc-chat-keyboard-open');
+  document.body.style.removeProperty('--qc-floating-lock-bottom');document.body.style.removeProperty('--qc-floating-close-bottom');
   syncCloseVisibility();
   if(typeof showPage==='function'&&typeof homePage!=='undefined')showPage(homePage);
   else {const home=document.getElementById('homePage');if(home){document.querySelectorAll('.page').forEach(el=>el.classList.add('hidden'));home.classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'});}}
