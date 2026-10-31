@@ -84,7 +84,7 @@
 .media-video-thumb{width:100%;aspect-ratio:1/1;display:grid;place-items:center;background:linear-gradient(145deg,#ead9ed,#f7dce7);font-size:42px;color:#8c6287}
 .media-card-caption{padding:10px 11px 12px;font:12px/1.4 Arial,sans-serif;color:#76596f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .media-card .media-kind{position:absolute;top:8px;left:8px;padding:5px 7px;border-radius:20px;background:#fffdf0df;color:#79556d;font:10px Arial,sans-serif}
-.media-delete{position:absolute;top:7px;right:7px;width:30px;height:30px;border:0;border-radius:50%;background:#fffdf0ed;color:#a13c51;cursor:pointer;font:16px Arial,sans-serif}
+.media-delete{position:absolute;right:8px;bottom:48px;z-index:3;width:32px;height:32px;border:1px solid #f0d8e2;border-radius:50%;background:#fffdf0f2;color:#a13c51;cursor:pointer;font:18px Arial,sans-serif;box-shadow:0 2px 8px #44223322}.media-delete:disabled{opacity:.55;cursor:wait}
 .media-empty{text-align:center;padding:60px 18px;color:#9b7b92}.media-empty>span{font-size:46px;color:#e7a5c2}.media-empty h3{font-weight:normal;color:#76536d;margin:12px 0 7px}.media-empty p{font:13px/1.6 Arial,sans-serif}
 #mediaViewer{position:fixed;inset:0;z-index:50;background:rgba(25,17,31,.96);display:flex;align-items:center;justify-content:center;padding:65px 58px 82px}
 #mediaViewer.hidden{display:none!important}
@@ -187,6 +187,7 @@ body.chat-open{overflow:hidden;touch-action:none}
       <button type="button" class="media-filter active" data-media-filter="all">All Memories</button>
       <button type="button" class="media-filter" data-media-filter="photo">📸 Photos</button>
       <button type="button" class="media-filter" data-media-filter="video">🎬 Videos</button>
+      <button type="button" class="media-filter" data-media-filter="chat">💬 Chat Media</button>
       <button type="button" class="media-filter" data-media-filter="favourite">❤️ Favourites <span id="mediaFavouriteCount">0</span></button>
     </nav>
     <div id="mediaStatus" role="status"></div>
@@ -423,7 +424,7 @@ const mediaOverlay=document.getElementById('mediaOverlay'),mediaViewer=document.
 const mediaGrid=document.getElementById('mediaGrid'),mediaStatus=document.getElementById('mediaStatus');
 function mediaSay(s){mediaStatus.textContent=s}
 function mediaEsc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function mediaIsOwner(){return !!qcMediaUser&&qcMediaUser.id===QC_OWNER_UID}
+function mediaIsOwner(){return !!qcMediaUser&&String(qcMediaUser.id||'').toLowerCase()===QC_OWNER_UID.toLowerCase()}
 async function openMediaGallery(){
  if(!window.__qcAuthenticated){return}
  mediaOverlay.classList.remove('hidden');mediaSay('Memories load ho rahi hain…');
@@ -433,10 +434,20 @@ async function openMediaGallery(){
   document.getElementById('mediaAddLabel').classList.remove('disabled');
   document.getElementById('mediaUploadInput').disabled=false;
   document.getElementById('mediaPermission').textContent=mediaIsOwner()?'Dono accounts add kar sakte hain · Delete ka control tumhare paas hai':'Tum photos/videos add kar sakte ho · Delete sirf owner kar sakta hai';
-  const {data,error}=await qcClient.storage.from(QC_MEDIA_BUCKET).list('',{limit:500,sortBy:{column:'created_at',order:'desc'}});
-  if(error)throw error;
-  qcMediaItems=(data||[]).filter(x=>x.name&&!x.name.startsWith('.')).map(x=>({name:x.name,created_at:x.created_at||null,metadata:x.metadata||{},id:x.id||x.name}));
-  await renderMediaGrid();mediaSay(qcMediaItems.length?`${qcMediaItems.length} memories · date-wise arranged. Heart se favourites save karo.`:'');
+  const {data:galleryData,error:galleryError}=await qcClient.storage.from(QC_MEDIA_BUCKET).list('',{limit:500,sortBy:{column:'created_at',order:'desc'}});
+  if(galleryError)throw galleryError;
+  const galleryItems=(galleryData||[]).filter(x=>x.name&&!x.name.startsWith('.')&&(x.id||x.metadata)).map(x=>({name:x.name,displayName:x.name.replace(/^\d+_/,'').replace(/^\d{13}-/,''),source:'gallery',created_at:x.created_at||null,metadata:x.metadata||{},id:x.id||x.name}));
+  let chatItems=[];
+  try{
+   const {data:chatData,error:chatError}=await qcClient.from('qc_chat_messages').select('id,created_at,message_type,media_path,message_text,sender_id,is_deleted_for_everyone').in('message_type',['image','video']).not('media_path','is',null).order('created_at',{ascending:false}).limit(1000);
+   if(chatError)throw chatError;
+   chatItems=(chatData||[]).filter(m=>m.media_path&&!m.is_deleted_for_everyone).map(m=>({name:m.media_path,displayName:(m.message_text||m.media_path.split('/').pop()||'Chat media'),source:'chat',message_id:m.id,sender_id:m.sender_id,created_at:m.created_at||null,metadata:{mimetype:m.message_type==='video'?'video/mp4':'image/*'},id:m.id}));
+  }catch(chatLoadError){
+   mediaSay('Gallery photos load ho gayi; Chat Media load nahi hui: '+(chatLoadError.message||'Chat access check karo.'));
+  }
+  qcMediaItems=[...galleryItems,...chatItems].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  await renderMediaGrid();
+  if(!mediaStatus.textContent.startsWith('Gallery photos load ho gayi'))mediaSay(qcMediaItems.length?`${qcMediaItems.length} memories · Gallery aur Chat media ek jagah ♡`:'');
   document.getElementById('mediaEmpty').classList.toggle('hidden',qcMediaItems.length>0);
  }catch(e){mediaSay('Gallery load nahi hui. Supabase bucket/policies check karo. '+(e.message||''));mediaGrid.innerHTML='';document.getElementById('mediaEmpty').classList.add('hidden')}
 }
@@ -448,11 +459,11 @@ let qcMediaFilter='all';
 const QC_FAVOURITES_KEY='qc_media_favourites_v1';
 function qcGetFavourites(){try{return new Set(JSON.parse(localStorage.getItem(QC_FAVOURITES_KEY)||'[]'))}catch(e){return new Set()}}
 function qcSaveFavourites(set){try{localStorage.setItem(QC_FAVOURITES_KEY,JSON.stringify([...set]))}catch(e){mediaSay('Favourite save nahi ho paya. Browser storage check karo.')}}
-function qcMediaKey(item){return item.name}
+function qcMediaKey(item){return item.source==='chat'?'chat:'+item.name:item.name}
 function qcMediaIsVideo(item){const mime=item.metadata?.mimetype||item.metadata?.contentType||'';return /video/i.test(mime)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(item.name)}
 function qcMediaDate(item){const d=item.created_at?new Date(item.created_at):null;return d&&!Number.isNaN(d.getTime())?d:null}
 function qcDateLabel(item){const d=qcMediaDate(item);return d?d.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'Date not available'}
-function qcVisibleMedia(){const fav=qcGetFavourites();return qcMediaItems.filter(item=>{const video=qcMediaIsVideo(item);if(qcMediaFilter==='photo'&&video)return false;if(qcMediaFilter==='video'&&!video)return false;if(qcMediaFilter==='favourite'&&!fav.has(qcMediaKey(item)))return false;return true})}
+function qcVisibleMedia(){const fav=qcGetFavourites();return qcMediaItems.filter(item=>{const video=qcMediaIsVideo(item);if(qcMediaFilter==='photo'&&video)return false;if(qcMediaFilter==='video'&&!video)return false;if(qcMediaFilter==='chat'&&item.source!=='chat')return false;if(qcMediaFilter==='favourite'&&!fav.has(qcMediaKey(item)))return false;return true})}
 function qcUpdateFavouriteCount(){const el=document.getElementById('mediaFavouriteCount');if(el)el.textContent=qcMediaItems.filter(x=>qcGetFavourites().has(qcMediaKey(x))).length}
 document.querySelectorAll('[data-media-filter]').forEach(btn=>btn.addEventListener('click',()=>{qcMediaFilter=btn.dataset.mediaFilter;document.querySelectorAll('[data-media-filter]').forEach(b=>b.classList.toggle('active',b===btn));renderMediaGrid()}));
 function renderMediaGrid(){
@@ -468,8 +479,8 @@ function renderMediaGrid(){
   else{thumb.className='';thumb.style.cssText='width:100%;aspect-ratio:1/1;background:#f5e9ef';const img=document.createElement('img');img.className='media-thumb';img.alt='Photo memory';img.loading='lazy';mediaUrl(item).then(url=>{img.src=url}).catch(()=>{img.alt='Preview unavailable'});thumb.appendChild(img)}
   card.appendChild(thumb);const kind=document.createElement('span');kind.className='media-kind';kind.textContent=isVideo?'▶ VIDEO':'♡ PHOTO';card.appendChild(kind);
   const favBtn=document.createElement('button');favBtn.type='button';favBtn.className='media-favourite'+(favourites.has(qcMediaKey(item))?' is-favourite':'');favBtn.textContent=favourites.has(qcMediaKey(item))?'♥':'♡';favBtn.title=favourites.has(qcMediaKey(item))?'Remove from favourites':'Add to favourites';favBtn.setAttribute('aria-label',favBtn.title);favBtn.addEventListener('click',e=>{e.stopPropagation();const set=qcGetFavourites(),key=qcMediaKey(item);if(set.has(key))set.delete(key);else set.add(key);qcSaveFavourites(set);renderMediaGrid()});card.appendChild(favBtn);
-  const cap=document.createElement('div');cap.className='media-card-caption';cap.textContent=item.name.replace(/^\d+_/,'').replace(/^\d{13}-/,'');card.appendChild(cap);
-  if(mediaIsOwner()){const del=document.createElement('button');del.className='media-delete';del.type='button';del.title='Delete memory';del.textContent='×';del.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('Is photo/video ko permanently delete karna hai?'))return;del.disabled=true;const {error}=await qcClient.storage.from(QC_MEDIA_BUCKET).remove([item.name]);if(error){mediaSay('Delete fail hua: '+error.message);del.disabled=false}else{const set=qcGetFavourites();set.delete(qcMediaKey(item));qcSaveFavourites(set);await openMediaGallery()}});card.appendChild(del)}
+  const cap=document.createElement('div');cap.className='media-card-caption';cap.textContent=(item.source==='chat'?'💬 ':'')+(item.displayName||item.name.replace(/^\d+_/,'').replace(/^\d{13}-/,''));card.appendChild(cap);
+  if(mediaIsOwner()){const del=document.createElement('button');del.className='media-delete';del.type='button';del.title='Permanently delete memory';del.setAttribute('aria-label','Delete memory');del.textContent='×';del.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('Is photo/video ko permanently delete karna hai? Ye Supabase Storage se bhi remove hoga.'))return;del.disabled=true;try{const {error:storageError}=await qcClient.storage.from(QC_MEDIA_BUCKET).remove([item.name]);if(storageError)throw storageError;if(item.source==='chat'&&item.message_id){const {error:rowError}=await qcClient.from('qc_chat_messages').update({is_deleted_for_everyone:true,message_text:'This message was deleted.',media_path:null,updated_at:new Date().toISOString()}).eq('id',item.message_id);if(rowError)throw new Error('Storage file delete ho gayi, lekin Chat record update nahi hua: '+rowError.message)}const set=qcGetFavourites();set.delete(qcMediaKey(item));qcSaveFavourites(set);mediaSay('Memory permanently delete ho gayi ♡');await openMediaGallery()}catch(err){mediaSay('Delete complete nahi hua: '+(err.message||'Storage permission check karo.'));del.disabled=false}});card.appendChild(del)}
   card.addEventListener('click',()=>openMediaViewer(qcMediaItems.findIndex(x=>x.name===item.name)));mediaGrid.appendChild(card)
  }
 }
@@ -497,7 +508,7 @@ async function renderMediaViewer(){
  const stage=document.getElementById('viewerStage');stage.innerHTML='';const mime=item.metadata?.mimetype||item.metadata?.contentType||'';
  const isVideo=/video/i.test(mime)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(item.name);
  try{const url=await mediaUrl(item);const el=document.createElement(isVideo?'video':'img');el.src=url;if(isVideo){el.controls=true;el.autoplay=true;el.playsInline=true}else{el.alt=item.name}stage.appendChild(el)}catch(e){stage.textContent='File open nahi ho saki. '+e.message}
- document.getElementById('viewerCaption').textContent=item.name.replace(/^\d+_/,'');document.getElementById('viewerCount').textContent=`${qcMediaIndex+1} / ${qcMediaItems.length}`;
+ document.getElementById('viewerCaption').textContent=(item.source==='chat'?'Chat · ':'')+(item.displayName||item.name.replace(/^\d+_/,''));document.getElementById('viewerCount').textContent=`${qcMediaIndex+1} / ${qcMediaItems.length}`;
  document.getElementById('viewerPrev').disabled=qcMediaIndex===0;document.getElementById('viewerNext').disabled=qcMediaIndex===qcMediaItems.length-1;
 }
 document.getElementById('viewerPrev').addEventListener('click',()=>{if(qcMediaIndex>0){qcMediaIndex--;renderMediaViewer()}});
@@ -563,7 +574,7 @@ chatMessages.addEventListener('click',async e=>{const b=e.target.closest('button
  if(act==='react'){const emoji=prompt('Reaction emoji enter karo (e.g. ❤️ 😂 🥹)');if(!emoji)return;const {error}=await qcClient.from('qc_chat_reactions').insert({message_id:m.id,user_id:qcChatUser.id,emoji});if(error)throw error;chatStatus.textContent='Reaction saved ♡';return}
  if(act==='pin'){const {error}=await qcClient.from('qc_chat_messages').update({is_pinned:!m.is_pinned}).eq('id',m.id);if(error)throw error;m.is_pinned=!m.is_pinned;qcChatRender();return}
  if(act==='edit'){if(!qcChatMine(m))return;const next=prompt('Edit message:',m.message_text||'');if(next===null||!next.trim())return;const {error}=await qcClient.from('qc_chat_messages').update({message_text:next.trim(),is_edited:true,updated_at:new Date().toISOString()}).eq('id',m.id);if(error)throw error;m.message_text=next.trim();m.is_edited=true;qcChatRender();return}
- if(act==='delete'){if(qcChatUser.id!==QC_CHAT_OWNER){alert('Delete control sirf owner ke paas hai.');return}const choice=confirm('OK = Delete for everyone. Cancel = keep message.');if(!choice)return;const {error}=await qcClient.from('qc_chat_messages').update({is_deleted_for_everyone:true,message_text:'This message was deleted.'}).eq('id',m.id);if(error)throw error;m.is_deleted_for_everyone=true;m.message_text='This message was deleted.';qcChatRender();return}
+ if(act==='delete'){if(!qcChatUser||qcChatUser.id!==QC_CHAT_OWNER){alert('Delete control sirf owner ke paas hai.');return}const choice=confirm('Is message ko sabke liye delete karna hai? Attached photo/video/voice file bhi Storage se remove hogi.');if(!choice)return;const oldMediaPath=m.media_path||null;const {error}=await qcClient.from('qc_chat_messages').update({is_deleted_for_everyone:true,message_text:'This message was deleted.',media_path:null,updated_at:new Date().toISOString()}).eq('id',m.id);if(error)throw error;m.is_deleted_for_everyone=true;m.message_text='This message was deleted.';m.media_path=null;m.media_url='';qcChatRender();if(oldMediaPath){const {error:storageError}=await qcClient.storage.from(QC_CHAT_BUCKET).remove([oldMediaPath]);if(storageError){chatStatus.textContent='Message delete ho gaya, lekin Storage file remove nahi hui: '+storageError.message;return}}chatStatus.textContent='Message aur attached file permanently delete ho gaye ♡';return}
  }catch(err){chatStatus.textContent='Action failed: '+(err.message||'Check database policies')}
 });
 document.getElementById('chatAttachBtn').addEventListener('click',()=>document.getElementById('chatFileInput').click());
