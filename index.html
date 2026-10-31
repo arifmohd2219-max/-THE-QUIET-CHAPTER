@@ -153,6 +153,15 @@ body.chat-open{overflow:hidden;touch-action:none}
 /* Use one global Close control instead of duplicate section-header Close buttons. */
 #chatClose,#mediaClose,#diaryClose{display:none!important}
 </style>
+
+<style id="qc-whatsapp-voice-player-style">
+#chatOverlay .qc-voice-player{display:flex;align-items:center;gap:10px;width:min(330px,72vw);min-width:190px;box-sizing:border-box;padding:10px 12px;margin:5px 0 2px;border:1px solid #e9c5b5;border-radius:18px;background:rgba(255,250,246,.88);color:#68473d}
+#chatOverlay .chat-bubble.mine .qc-voice-player{background:rgba(255,238,230,.92)}
+#chatOverlay .qc-voice-play{flex:0 0 38px;width:38px;height:38px;border:0;border-radius:50%;background:#9f555e;color:#fff;font-size:17px;display:grid;place-items:center;cursor:pointer}
+#chatOverlay .qc-voice-seek{flex:1;min-width:35px;width:100%;height:5px;accent-color:#a45c65;cursor:pointer}
+#chatOverlay .qc-voice-time{flex:0 0 auto;min-width:38px;text-align:right;font:12px/1.2 Arial,sans-serif;color:#80675e;font-variant-numeric:tabular-nums}
+#chatOverlay .qc-voice-audio{display:none!important}
+</style>
 </head><body><button id="qcFloatingLock" class="qc-lock-hidden" type="button" aria-label="Lock website" title="Lock website">🔒</button><button id="qcFloatingClose" class="qc-close-hidden" type="button" aria-label="Close section" title="Close section">✕</button><div class="bg" aria-hidden="true"></div>
 <section id="lockPage" class="page"><div class="lock-card"><div class="lock-icon" aria-hidden="true">♡</div><h1 class="lock-title">Enter your PIN to open website</h1><form id="pinForm"><input class="pin-input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="••••••" aria-label="Enter six-digit PIN" autocomplete="off" required><button type="submit" class="primary unlock">Unlock</button></form><p id="pinMessage" aria-live="polite"></p></div></section>
 <section id="authPage" class="page hidden" style="display:flex;align-items:center;justify-content:center;padding:22px"><div class="auth-card"><div class="lock-icon" aria-hidden="true">♡</div><h1 class="auth-title">Welcome back ♡</h1><p class="auth-subtitle">Some worlds are meant for two hearts only.</p><form id="loginForm"><input class="auth-input" id="loginEmail" type="email" placeholder="Email address" autocomplete="username" required><input class="auth-input" id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" required><button class="primary auth-btn" type="submit">Login ♡</button></form><button class="auth-link" id="forgotLink" type="button">Forgot password?</button><form id="resetForm" class="hidden"><p class="auth-subtitle">Enter your email and we'll send a password reset link.</p><input class="auth-input" id="resetEmail" type="email" placeholder="Email address" autocomplete="email" required><button class="primary auth-btn" type="submit">Send reset link</button><button class="auth-link" id="backToLogin" type="button">Back to Login</button></form><form id="newPasswordForm" class="hidden"><p class="auth-subtitle">Choose a new password for your account.</p><input class="auth-input" id="newPassword" type="password" minlength="8" placeholder="New password (8+ characters)" autocomplete="new-password" required><button class="primary auth-btn" type="submit">Save new password</button></form><p id="authMessage" class="auth-message" aria-live="polite"></p><p class="auth-note">Private access · Authorized accounts only ♡</p></div></section>
@@ -513,7 +522,7 @@ function qcChatRender(){
  const term=document.getElementById('chatSearch').value.trim().toLowerCase(),pinnedOnly=document.getElementById('chatPinnedBtn').dataset.only==='1';
  const rows=qcChatRows.filter(m=>!m.is_deleted_for_everyone&&(!term||(m.message_text||'').toLowerCase().includes(term))&&(!pinnedOnly||m.is_pinned));
  let lastDay='';
- chatMessages.innerHTML=rows.map(m=>{const mine=qcChatMine(m),day=qcChatDateLabel(m.created_at),when=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});let dateSep='';if(day!==lastDay){dateSep=`<div class="chat-date">${qcChatEscape(day)}</div>`;lastDay=day}const parent=m.reply_to?qcChatRows.find(x=>x.id===m.reply_to):null;let content=qcChatEscape(m.message_text||'');if(m.message_type==='image'&&m.media_path)content=`${content}<img class="chat-media" src="${qcChatEscape(m.media_url||'')}" alt="Shared photo">`;else if(m.message_type==='video'&&m.media_path)content=`${content}<video class="chat-media" controls playsinline src="${qcChatEscape(m.media_url||'')}"></video>`;else if(m.message_type==='voice'&&m.media_path)content=`<audio class="chat-voice" controls src="${qcChatEscape(m.media_url||'')}"></audio>`;return `${dateSep}<article class="chat-bubble ${mine?'mine':''}" data-id="${m.id}">${m.is_pinned?'<div class="chat-pinned">📌 Pinned</div>':''}${parent?`<div class="chat-reply-preview">↩ ${qcChatEscape((parent.message_text||'Media message').slice(0,140))}</div>`:''}<div>${content||'<i>Media message</i>'}</div><div class="chat-meta">${m.is_edited?'edited · ':''}${when}${mine?(m.read_at?' · <span class="qc-read-ticks">✓✓</span> read':m.delivered_at?' · ✓✓ delivered':' · ✓ sent'):''}</div><div class="chat-actions"><button data-act="reply" data-id="${m.id}">↩ Reply</button><button data-act="react" data-id="${m.id}">♡ React</button><button data-act="pin" data-id="${m.id}">${m.is_pinned?'Unpin':'📌 Pin'}</button><button data-act="copy" data-id="${m.id}">Copy</button>${mine?'<button data-act="edit" data-id="'+m.id+'">Edit</button>':''}${qcChatUser&&qcChatUser.id===QC_CHAT_OWNER?'<button data-act="delete" data-id="'+m.id+'">Delete</button>':''}</div></article>`}).join('');
+ chatMessages.innerHTML=rows.map(m=>{const mine=qcChatMine(m),day=qcChatDateLabel(m.created_at),when=new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});let dateSep='';if(day!==lastDay){dateSep=`<div class="chat-date">${qcChatEscape(day)}</div>`;lastDay=day}const parent=m.reply_to?qcChatRows.find(x=>x.id===m.reply_to):null;let content=qcChatEscape(m.message_text||'');if(m.message_type==='image'&&m.media_path)content=`${content}<img class="chat-media" src="${qcChatEscape(m.media_url||'')}" alt="Shared photo">`;else if(m.message_type==='video'&&m.media_path)content=`${content}<video class="chat-media" controls playsinline src="${qcChatEscape(m.media_url||'')}"></video>`;else if(m.message_type==='voice'&&m.media_path)content=`<div class="qc-voice-player" data-qc-voice-player><button type="button" class="qc-voice-play" data-qc-voice-play aria-label="Play voice message">▶</button><input class="qc-voice-seek" data-qc-voice-seek type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek voice message"><span class="qc-voice-time" data-qc-voice-time>--:--</span><audio class="qc-voice-audio" preload="metadata" src="${qcChatEscape(m.media_url||'')}"></audio></div>`;return `${dateSep}<article class="chat-bubble ${mine?'mine':''}" data-id="${m.id}">${m.is_pinned?'<div class="chat-pinned">📌 Pinned</div>':''}${parent?`<div class="chat-reply-preview">↩ ${qcChatEscape((parent.message_text||'Media message').slice(0,140))}</div>`:''}<div>${content||'<i>Media message</i>'}</div><div class="chat-meta">${m.is_edited?'edited · ':''}${when}${mine?(m.read_at?' · <span class="qc-read-ticks">✓✓</span> read':m.delivered_at?' · ✓✓ delivered':' · ✓ sent'):''}</div><div class="chat-actions"><button data-act="reply" data-id="${m.id}">↩ Reply</button><button data-act="react" data-id="${m.id}">♡ React</button><button data-act="pin" data-id="${m.id}">${m.is_pinned?'Unpin':'📌 Pin'}</button><button data-act="copy" data-id="${m.id}">Copy</button>${mine?'<button data-act="edit" data-id="'+m.id+'">Edit</button>':''}${qcChatUser&&qcChatUser.id===QC_CHAT_OWNER?'<button data-act="delete" data-id="'+m.id+'">Delete</button>':''}</div></article>`}).join('');
  if(!rows.length)chatMessages.innerHTML='<div style="text-align:center;color:#967c6e;padding:30px">No messages here yet. Start your little conversation ♡</div>';chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 function qcChatSetReply(m){qcChatReplyTo=m;document.getElementById('chatReplyBar').classList.toggle('hidden',!m);document.getElementById('chatReplyText').textContent=m?'Replying to: '+((m.message_text||'Media message').slice(0,100)):'Replying…';document.getElementById('chatInput').focus()}
@@ -844,7 +853,7 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
 </style>
 <script id="qc-issue-fixes-js">
 (()=>{
- const $=id=>document.getElementById(id), overlay=$('chatOverlay'); if(!overlay)return;
+ const $=id=>document.getElementById(id), overlay=$('chatOverlay'), status=$('chatStatus'); if(!overlay)return;
  // Lock must close the chat first, then lock the whole site.
  document.addEventListener('click',e=>{const b=e.target.closest('#qcChatLock');if(!b)return;e.preventDefault();e.stopImmediatePropagation();try{if(typeof qcCloseChat==='function')qcCloseChat();}catch(_){}setTimeout(()=>{try{if(typeof lockWebsite==='function')lockWebsite();else{const lp=$('lockPage');if(lp){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));lp.classList.remove('hidden');}}}catch(_){}},30)},true);
  // Simple voice-note flow: tap mic -> recording popup -> stop -> preview -> send/delete.
@@ -880,7 +889,7 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
     if(error)throw error;
     await qcChatSend('Voice message','voice',path);
     resetVoice();status.textContent='Voice message sent ♡';
-   }catch(err){status.textContent='Voice send failed: '+(err.message||'Storage upload failed')+'. Recording abhi safe hai; dobara Send try karo.';send.disabled=false;send.textContent='Send voice'}
+   }catch(err){const msg='Voice send failed: '+(err?.message||err?.error_description||'Storage upload/database insert failed')+'. Recording abhi safe hai; dobara Send try karo.';if(status)status.textContent=msg;alert(msg);send.disabled=false;send.textContent='Send voice'}
   });
   mic.addEventListener('click',async()=>{
    if(recorder?.state==='recording'){stopRecording();return}
@@ -914,6 +923,14 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
     status.textContent='Recording chal rahi hai…';
    }catch(err){stopTracks();clearTimer();if(panel)panel.hidden=true;status.textContent='Microphone unavailable: '+(err.name==='NotAllowedError'?'Browser mein microphone permission allow karo.':err.message||'Please try again.')}
   });
+  // If the user backgrounds Chrome or leaves this page, stop active recording safely.
+  const stopVoiceForBackground=()=>{
+   if(recorder?.state==='recording'){stopRecording();return}
+   stopTracks();
+   const previewAudio=$('qcVoiceAudio');if(previewAudio&&!previewAudio.paused)previewAudio.pause();
+  };
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')stopVoiceForBackground()});
+  window.addEventListener('pagehide',stopVoiceForBackground);
  }
  // Reactions are fetched and visibly rendered beneath each message bubble.
  async function renderReactions(){try{if(typeof qcClient==='undefined'||typeof qcChatRows==='undefined')return;const ids=qcChatRows.map(m=>m.id);if(!ids.length)return;const {data,error}=await qcClient.from('qc_chat_reactions').select('message_id,user_id,emoji').in('message_id',ids);if(error)return;document.querySelectorAll('#chatMessages .qc-reactions').forEach(n=>n.remove());for(const r of data||[]){const bubble=document.querySelector(`#chatMessages [data-id="${CSS.escape(r.message_id)}"]`)||[...document.querySelectorAll('#chatMessages .chat-bubble')].find(el=>el.dataset.id===r.message_id);if(!bubble)continue;let box=bubble.querySelector('.qc-reactions');if(!box){box=document.createElement('div');box.className='qc-reactions';bubble.append(box)}const chip=document.createElement('span');chip.className='qc-reaction-chip';chip.textContent=r.emoji;box.append(chip)}}catch(_){} }
@@ -1157,4 +1174,35 @@ body.qc-chat-keyboard-open #qcFloatingClose:active{transform:scale(.96)!importan
 })();
 </script>
 
+
+<script id="qc-voice-player-and-background-media">
+(()=>{
+ const messages=document.getElementById('chatMessages');
+ const fmt=t=>{if(!Number.isFinite(t)||t<0)return '0:00';const m=Math.floor(t/60),sec=Math.floor(t%60);return m+':'+String(sec).padStart(2,'0')};
+ function syncPlayer(audio){
+  const box=audio.closest('[data-qc-voice-player]');if(!box)return;
+  const seek=box.querySelector('[data-qc-voice-seek]'),time=box.querySelector('[data-qc-voice-time]'),btn=box.querySelector('[data-qc-voice-play]');
+  if(seek&&Number.isFinite(audio.duration)&&audio.duration>0)seek.value=String((audio.currentTime/audio.duration)*100);
+  if(time)time.textContent=fmt(audio.currentTime)+(Number.isFinite(audio.duration)&&audio.duration>0?' / '+fmt(audio.duration):'');
+  if(btn){btn.textContent=audio.paused?'▶':'Ⅱ';btn.setAttribute('aria-label',audio.paused?'Play voice message':'Pause voice message')}
+ }
+ if(messages){
+  messages.addEventListener('click',async e=>{
+   const btn=e.target.closest('[data-qc-voice-play]');if(!btn)return;
+   const box=btn.closest('[data-qc-voice-player]'),audio=box?.querySelector('audio');if(!audio)return;
+   if(audio.paused){document.querySelectorAll('audio,video').forEach(media=>{if(media!==audio&&!media.paused)media.pause()});try{await audio.play()}catch(err){console.warn('[THE QUIET CHAPTER] Voice playback failed:',err.message)}}else audio.pause();
+   syncPlayer(audio);
+  });
+  messages.addEventListener('input',e=>{
+   const seek=e.target.closest('[data-qc-voice-seek]');if(!seek)return;
+   const audio=seek.closest('[data-qc-voice-player]')?.querySelector('audio');if(audio&&Number.isFinite(audio.duration))audio.currentTime=(Number(seek.value)/100)*audio.duration;
+  });
+  ['loadedmetadata','timeupdate','durationchange','play','pause','ended'].forEach(type=>messages.addEventListener(type,e=>{const audio=e.target;if(audio instanceof HTMLAudioElement&&audio.classList.contains('qc-voice-audio'))syncPlayer(audio)},true));
+ }
+ // Stop all site media when Chrome is backgrounded, the tab is hidden, or the page is left.
+ function pauseSiteMedia(){document.querySelectorAll('audio,video').forEach(media=>{try{media.pause()}catch(_){}})}
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')pauseSiteMedia()});
+ window.addEventListener('pagehide',pauseSiteMedia);
+})();
+</script>
 </body></html>
