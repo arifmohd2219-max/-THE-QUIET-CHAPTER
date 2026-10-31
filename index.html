@@ -84,7 +84,21 @@
 .media-video-thumb{width:100%;aspect-ratio:1/1;display:grid;place-items:center;background:linear-gradient(145deg,#ead9ed,#f7dce7);font-size:42px;color:#8c6287}
 .media-card-caption{padding:10px 11px 12px;font:12px/1.4 Arial,sans-serif;color:#76596f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .media-card .media-kind{position:absolute;top:8px;left:8px;padding:5px 7px;border-radius:20px;background:#fffdf0df;color:#79556d;font:10px Arial,sans-serif}
-.media-delete{position:absolute;top:7px;right:7px;width:30px;height:30px;border:0;border-radius:50%;background:#fffdf0ed;color:#a13c51;cursor:pointer;font:16px Arial,sans-serif}
+.media-delete{
+ position:absolute;
+ top:48px;
+ right:8px;
+ z-index:3;
+ width:30px;
+ height:30px;
+ border:1px solid #ffffffb8;
+ border-radius:50%;
+ background:#fffdf0ed;
+ color:#a13c51;
+ cursor:pointer;
+ font:16px Arial,sans-serif;
+ box-shadow:0 2px 9px #44223322;
+}
 .media-empty{text-align:center;padding:60px 18px;color:#9b7b92}.media-empty>span{font-size:46px;color:#e7a5c2}.media-empty h3{font-weight:normal;color:#76536d;margin:12px 0 7px}.media-empty p{font:13px/1.6 Arial,sans-serif}
 #mediaViewer{position:fixed;inset:0;z-index:50;background:rgba(25,17,31,.96);display:flex;align-items:center;justify-content:center;padding:65px 58px 82px}
 #mediaViewer.hidden{display:none!important}
@@ -193,12 +207,13 @@ body.chat-open{overflow:hidden;touch-action:none}
       <label class="media-add" id="mediaAddLabel">＋ Add photos / videos<input id="mediaUploadInput" type="file" accept="image/*,video/*" multiple hidden></label>
       <span id="mediaPermission" class="media-permission">Dono accounts add kar sakte hain · Delete sirf owner</span>
     </div>
-    <nav class="media-filters" aria-label="Filter memories">
-      <button type="button" class="media-filter active" data-media-filter="all">All Memories</button>
-      <button type="button" class="media-filter" data-media-filter="photo">📸 Photos</button>
-      <button type="button" class="media-filter" data-media-filter="video">🎬 Videos</button>
-      <button type="button" class="media-filter" data-media-filter="favourite">❤️ Favourites <span id="mediaFavouriteCount">0</span></button>
-    </nav>
+<nav class="media-filters" aria-label="Filter memories">
+  <button type="button" class="media-filter active" data-media-filter="all">All Memories</button>
+  <button type="button" class="media-filter" data-media-filter="chat">💬 Chat Media</button>
+  <button type="button" class="media-filter" data-media-filter="photo">📸 Photos</button>
+  <button type="button" class="media-filter" data-media-filter="video">🎬 Videos</button>
+  <button type="button" class="media-filter" data-media-filter="favourite">❤️ Favourites <span id="mediaFavouriteCount">0</span></button>
+</nav>
     <div id="mediaStatus" role="status"></div>
     <div id="mediaGrid" class="media-grid"></div>
     <div id="mediaEmpty" class="media-empty hidden"><span>♡</span><h3>Abhi yahan koi yaad nahi</h3><p>First photo ya video add karke is jagah ko apna banao.</p></div>
@@ -448,80 +463,431 @@ function mediaSay(s){mediaStatus.textContent=s}
 function mediaEsc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function mediaIsOwner(){return !!qcMediaUser&&qcMediaUser.id===QC_OWNER_UID}
 async function openMediaGallery(){
- if(!window.__qcAuthenticated){return}
- mediaOverlay.classList.remove('hidden');mediaSay('Memories load ho rahi hain…');
+ if(!window.__qcAuthenticated)return;
+
+ mediaOverlay.classList.remove('hidden');
+ mediaSay('Chat photos aur videos load ho rahe hain…');
+
  try{
-  const {data:{user},error:userErr}=await qcClient.auth.getUser();if(userErr||!user)throw new Error('Login session nahi mili.');
+  const {data:{user},error:userErr}=await qcClient.auth.getUser();
+
+  if(userErr||!user)throw new Error('Login session nahi mili.');
+
   qcMediaUser=user;
+
   document.getElementById('mediaAddLabel').classList.remove('disabled');
   document.getElementById('mediaUploadInput').disabled=false;
-  document.getElementById('mediaPermission').textContent=mediaIsOwner()?'Dono accounts add kar sakte hain · Delete ka control tumhare paas hai':'Tum photos/videos add kar sakte ho · Delete sirf owner kar sakta hai';
-  const {data,error}=await qcClient.storage.from(QC_MEDIA_BUCKET).list('',{limit:500,sortBy:{column:'created_at',order:'desc'}});
+
+  document.getElementById('mediaPermission').textContent=
+   mediaIsOwner()
+   ?'Dono accounts add kar sakte hain · Delete ka control tumhare paas hai'
+   :'Tum photos/videos add kar sakte ho · Delete sirf owner kar sakta hai';
+
+  const {data,error}=await qcClient
+   .from('qc_chat_messages')
+   .select('id,sender_id,message_text,message_type,media_path,created_at')
+   .in('message_type',['image','video'])
+   .not('media_path','is',null)
+   .order('created_at',{ascending:false});
+
   if(error)throw error;
-  qcMediaItems=(data||[]).filter(x=>x.name&&!x.name.startsWith('.')).map(x=>({name:x.name,created_at:x.created_at||null,metadata:x.metadata||{},id:x.id||x.name}));
-  await renderMediaGrid();mediaSay(qcMediaItems.length?`${qcMediaItems.length} memories · date-wise arranged. Heart se favourites save karo.`:'');
-  document.getElementById('mediaEmpty').classList.toggle('hidden',qcMediaItems.length>0);
- }catch(e){mediaSay('Gallery load nahi hui. Supabase bucket/policies check karo. '+(e.message||''));mediaGrid.innerHTML='';document.getElementById('mediaEmpty').classList.add('hidden')}
+
+  qcMediaItems=(data||[]).map(row=>({
+   id:row.id,
+   message_id:row.id,
+   name:row.media_path.split('/').pop(),
+   path:row.media_path,
+   message_text:row.message_text,
+   message_type:row.message_type,
+   created_at:row.created_at,
+   metadata:{
+    mimetype:row.message_type==='video'?'video/unknown':'image/unknown'
+   }
+  }));
+
+  await renderMediaGrid();
+
+  mediaSay(qcMediaItems.length
+   ?`${qcMediaItems.length} chat photos/videos available ♡`
+   :'Abhi chat mein koi photo ya video nahi hai.');
+
+  document.getElementById('mediaEmpty')
+   .classList.toggle('hidden',qcMediaItems.length>0);
+
+ }catch(e){
+
+  mediaSay('Gallery load nahi hui: '+(e.message||'Unknown error'));
+  mediaGrid.innerHTML='';
+  document.getElementById('mediaEmpty').classList.remove('hidden');
+
+ }
 }
 async function mediaUrl(item){
- const {data,error}=await qcClient.storage.from(QC_MEDIA_BUCKET).createSignedUrl(item.name,3600);
- if(error)throw error;return data.signedUrl;
+ const {data,error}=await qcClient
+  .storage
+  .from(QC_MEDIA_BUCKET)
+  .createSignedUrl(item.path,3600);
+
+ if(error)throw error;
+
+ return data.signedUrl;
 }
 let qcMediaFilter='all';
 const QC_FAVOURITES_KEY='qc_media_favourites_v1';
 function qcGetFavourites(){try{return new Set(JSON.parse(localStorage.getItem(QC_FAVOURITES_KEY)||'[]'))}catch(e){return new Set()}}
 function qcSaveFavourites(set){try{localStorage.setItem(QC_FAVOURITES_KEY,JSON.stringify([...set]))}catch(e){mediaSay('Favourite save nahi ho paya. Browser storage check karo.')}}
-function qcMediaKey(item){return item.name}
-function qcMediaIsVideo(item){const mime=item.metadata?.mimetype||item.metadata?.contentType||'';return /video/i.test(mime)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(item.name)}
+function qcMediaKey(item){
+ return item.path||item.name;
+}
+
+function qcMediaIsVideo(item){
+ return item.message_type==='video' ||
+ /video/i.test(item.metadata?.mimetype||'') ||
+ /\.(mp4|mov|webm|m4v|3gp)$/i.test(item.path||item.name);
+}
 function qcMediaDate(item){const d=item.created_at?new Date(item.created_at):null;return d&&!Number.isNaN(d.getTime())?d:null}
 function qcDateLabel(item){const d=qcMediaDate(item);return d?d.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'Date not available'}
-function qcVisibleMedia(){const fav=qcGetFavourites();return qcMediaItems.filter(item=>{const video=qcMediaIsVideo(item);if(qcMediaFilter==='photo'&&video)return false;if(qcMediaFilter==='video'&&!video)return false;if(qcMediaFilter==='favourite'&&!fav.has(qcMediaKey(item)))return false;return true})}
-function qcUpdateFavouriteCount(){const el=document.getElementById('mediaFavouriteCount');if(el)el.textContent=qcMediaItems.filter(x=>qcGetFavourites().has(qcMediaKey(x))).length}
+function qcVisibleMedia(){
+
+ const fav=qcGetFavourites();
+
+ return qcMediaItems.filter(item=>{
+
+  const video=qcMediaIsVideo(item);
+
+  if(qcMediaFilter==='chat'&&!item.message_id)return false;
+
+  if(qcMediaFilter==='photo'&&video)return false;
+
+  if(qcMediaFilter==='video'&&!video)return false;
+
+  if(qcMediaFilter==='favourite'&&!fav.has(qcMediaKey(item)))return false;
+
+  return true;
+
+ });
+}function qcUpdateFavouriteCount(){const el=document.getElementById('mediaFavouriteCount');if(el)el.textContent=qcMediaItems.filter(x=>qcGetFavourites().has(qcMediaKey(x))).length}
 document.querySelectorAll('[data-media-filter]').forEach(btn=>btn.addEventListener('click',()=>{qcMediaFilter=btn.dataset.mediaFilter;document.querySelectorAll('[data-media-filter]').forEach(b=>b.classList.toggle('active',b===btn));renderMediaGrid()}));
 function renderMediaGrid(){
- mediaGrid.innerHTML='';qcMediaUrls=[];const visible=qcVisibleMedia(),favourites=qcGetFavourites();qcUpdateFavouriteCount();
- if(!visible.length){const empty=document.createElement('div');empty.className='media-no-results';empty.textContent=qcMediaItems.length?'Is filter mein abhi koi memory nahi ♡':'Abhi yahan koi yaad nahi';mediaGrid.appendChild(empty);return}
+
+ mediaGrid.innerHTML='';
+ qcMediaUrls=[];
+
+ const visible=qcVisibleMedia();
+ const favourites=qcGetFavourites();
+
+ qcUpdateFavouriteCount();
+
+ if(!visible.length){
+  const empty=document.createElement('div');
+  empty.className='media-no-results';
+  empty.textContent=qcMediaItems.length
+   ?'Is filter mein abhi koi memory nahi ♡'
+   :'Abhi yahan koi yaad nahi';
+
+  mediaGrid.appendChild(empty);
+  return;
+ }
+
  let lastDate='';
+
  for(let i=0;i<visible.length;i++){
-  const item=visible[i],isVideo=qcMediaIsVideo(item),dateKey=qcMediaDate(item)?qcMediaDate(item).toISOString().slice(0,10):'unknown';
-  if(dateKey!==lastDate){const heading=document.createElement('h3');heading.className='media-date-heading';heading.textContent=qcDateLabel(item);mediaGrid.appendChild(heading);lastDate=dateKey}
-  const card=document.createElement('article');card.className='media-card';
-  const thumb=document.createElement('div');thumb.className=isVideo?'media-video-thumb':'';
-  if(isVideo){thumb.textContent='▶';thumb.setAttribute('aria-label','Video')}
-  else{thumb.className='';thumb.style.cssText='width:100%;aspect-ratio:1/1;background:#f5e9ef';const img=document.createElement('img');img.className='media-thumb';img.alt='Photo memory';img.loading='lazy';mediaUrl(item).then(url=>{img.src=url}).catch(()=>{img.alt='Preview unavailable'});thumb.appendChild(img)}
-  card.appendChild(thumb);const kind=document.createElement('span');kind.className='media-kind';kind.textContent=isVideo?'▶ VIDEO':'♡ PHOTO';card.appendChild(kind);
-  const favBtn=document.createElement('button');favBtn.type='button';favBtn.className='media-favourite'+(favourites.has(qcMediaKey(item))?' is-favourite':'');favBtn.textContent=favourites.has(qcMediaKey(item))?'♥':'♡';favBtn.title=favourites.has(qcMediaKey(item))?'Remove from favourites':'Add to favourites';favBtn.setAttribute('aria-label',favBtn.title);favBtn.addEventListener('click',e=>{e.stopPropagation();const set=qcGetFavourites(),key=qcMediaKey(item);if(set.has(key))set.delete(key);else set.add(key);qcSaveFavourites(set);renderMediaGrid()});card.appendChild(favBtn);
-  const cap=document.createElement('div');cap.className='media-card-caption';cap.textContent=item.name.replace(/^\d+_/,'').replace(/^\d{13}-/,'');card.appendChild(cap);
-  if(mediaIsOwner()){const del=document.createElement('button');del.className='media-delete';del.type='button';del.title='Delete memory';del.textContent='×';del.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('Is photo/video ko permanently delete karna hai?'))return;del.disabled=true;const {error}=await qcClient.storage.from(QC_MEDIA_BUCKET).remove([item.name]);if(error){mediaSay('Delete fail hua: '+error.message);del.disabled=false}else{const set=qcGetFavourites();set.delete(qcMediaKey(item));qcSaveFavourites(set);await openMediaGallery()}});card.appendChild(del)}
-  card.addEventListener('click',()=>openMediaViewer(qcMediaItems.findIndex(x=>x.name===item.name)));mediaGrid.appendChild(card)
+
+  const item=visible[i];
+  const isVideo=qcMediaIsVideo(item);
+
+  const dateKey=qcMediaDate(item)
+   ?qcMediaDate(item).toISOString().slice(0,10)
+   :'unknown';
+
+  if(dateKey!==lastDate){
+   const heading=document.createElement('h3');
+   heading.className='media-date-heading';
+   heading.textContent=qcDateLabel(item);
+   mediaGrid.appendChild(heading);
+   lastDate=dateKey;
+  }
+
+  const card=document.createElement('article');
+  card.className='media-card';
+
+  const thumb=document.createElement('div');
+
+  if(isVideo){
+
+   thumb.className='media-video-thumb';
+   thumb.textContent='▶';
+   thumb.setAttribute('aria-label','Video');
+
+  }else{
+
+   thumb.style.cssText='width:100%;aspect-ratio:1/1;background:#f5e9ef';
+
+   const img=document.createElement('img');
+   img.className='media-thumb';
+   img.alt='Photo memory';
+   img.loading='lazy';
+
+   mediaUrl(item)
+    .then(url=>img.src=url)
+    .catch(()=>img.alt='Preview unavailable');
+
+   thumb.appendChild(img);
+  }
+
+  card.appendChild(thumb);
+
+  const kind=document.createElement('span');
+  kind.className='media-kind';
+  kind.textContent=isVideo?'▶ VIDEO':'♡ PHOTO';
+  card.appendChild(kind);
+
+  const key=qcMediaKey(item);
+
+  const favBtn=document.createElement('button');
+  favBtn.type='button';
+
+  favBtn.className='media-favourite'+
+   (favourites.has(key)?' is-favourite':'');
+
+  favBtn.textContent=favourites.has(key)?'♥':'♡';
+  favBtn.title=favourites.has(key)
+   ?'Remove from favourites'
+   :'Add to favourites';
+
+  favBtn.setAttribute('aria-label',favBtn.title);
+
+  favBtn.addEventListener('click',e=>{
+
+   e.stopPropagation();
+
+   const set=qcGetFavourites();
+
+   if(set.has(key))set.delete(key);
+   else set.add(key);
+
+   qcSaveFavourites(set);
+   renderMediaGrid();
+
+  });
+
+  card.appendChild(favBtn);
+
+  const cap=document.createElement('div');
+  cap.className='media-card-caption';
+  cap.textContent=item.message_text||item.name;
+  card.appendChild(cap);
+
+  if(mediaIsOwner()){
+
+   const del=document.createElement('button');
+
+   del.className='media-delete';
+   del.type='button';
+   del.title='Delete memory';
+   del.textContent='×';
+
+   del.addEventListener('click',async e=>{
+
+    e.stopPropagation();
+
+    if(!confirm('Is photo/video ko permanently delete karna hai?'))return;
+
+    del.disabled=true;
+
+    try{
+
+     const {error:updateError}=await qcClient
+      .from('qc_chat_messages')
+      .update({
+       media_path:null,
+       message_type:'text',
+       message_text:'Media deleted.'
+      })
+      .eq('id',item.message_id);
+
+     if(updateError)throw updateError;
+
+     const {error:storageError}=await qcClient
+      .storage
+      .from(QC_MEDIA_BUCKET)
+      .remove([item.path]);
+
+     if(storageError){
+      console.warn('Storage cleanup failed:',storageError.message);
+     }
+
+     const set=qcGetFavourites();
+     set.delete(key);
+     qcSaveFavourites(set);
+
+     await openMediaGallery();
+
+     mediaSay('Photo/video delete ho gaya.');
+
+    }catch(err){
+
+     mediaSay('Delete fail hua: '+err.message);
+     del.disabled=false;
+
+    }
+
+   });
+
+   card.appendChild(del);
+  }
+
+  card.addEventListener('click',()=>{
+   openMediaViewer(
+    qcMediaItems.findIndex(x=>x.id===item.id)
+   );
+  });
+
+  mediaGrid.appendChild(card);
  }
 }
 document.getElementById('mediaUploadInput').addEventListener('change',async e=>{
- const files=Array.from(e.target.files||[]);if(!files.length)return;
- if(!window.__qcAuthenticated||!qcMediaUser){mediaSay('Pehle login karo.');return}
- const input=e.target;input.disabled=true;mediaSay(`${files.length} file(s) upload ho rahi hain…`);
- let done=0;
- for(const file of files){
-  if(!/^image\/|^video\//i.test(file.type)){mediaSay('Sirf photo aur video files allowed hain.');continue}
-  if(file.size>100*1024*1024){mediaSay(`${file.name}: file 100 MB se badi hai, skip ki.`);continue}
-  const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-  const path=`${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safe}`;
-  const {error}=await qcClient.storage.from(QC_MEDIA_BUCKET).upload(path,file,{upsert:false,contentType:file.type});
-  if(error){mediaSay(`Upload error: ${error.message}`);continue}done++;
+
+ const files=Array.from(e.target.files||[]);
+
+ if(!files.length)return;
+
+ if(!window.__qcAuthenticated||!qcMediaUser){
+  mediaSay('Pehle login karo.');
+  return;
  }
- input.value='';input.disabled=false;
- await openMediaGallery();if(done)mediaSay(`${done} file(s) successfully add ho gayi ♡`);
+
+ const input=e.target;
+
+ input.disabled=true;
+
+ mediaSay(`${files.length} file(s) upload ho rahi hain…`);
+
+ let done=0;
+
+ try{
+
+  for(const file of files){
+
+   if(!/^image\/|^video\//i.test(file.type)){
+    mediaSay('Sirf photo aur video files allowed hain.');
+    continue;
+   }
+
+   if(file.size>100*1024*1024){
+    mediaSay(`${file.name}: file 100 MB se badi hai, skip ki.`);
+    continue;
+   }
+
+   const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+
+   const path=
+    `chat/${qcMediaUser.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safe}`;
+
+   const {error:uploadError}=await qcClient
+    .storage
+    .from(QC_MEDIA_BUCKET)
+    .upload(path,file,{
+     upsert:false,
+     contentType:file.type
+    });
+
+   if(uploadError)throw uploadError;
+
+   const {error:insertError}=await qcClient
+    .from('qc_chat_messages')
+    .insert({
+     sender_id:qcMediaUser.id,
+     message_text:file.name,
+     message_type:file.type.startsWith('video/')?'video':'image',
+     media_path:path,
+     reply_to:null
+    });
+
+   if(insertError){
+
+    await qcClient.storage
+     .from(QC_MEDIA_BUCKET)
+     .remove([path]);
+
+    throw insertError;
+   }
+
+   done++;
+  }
+
+ }catch(err){
+
+  mediaSay('Upload failed: '+err.message);
+
+ }finally{
+
+  input.value='';
+  input.disabled=false;
+
+ }
+
+ await openMediaGallery();
+
+ if(done){
+  mediaSay(`${done} photo/video successfully add ho gayi ♡`);
+ }
+
 });
 async function openMediaViewer(index){
  if(!qcMediaItems.length)return;qcMediaIndex=index;mediaViewer.classList.remove('hidden');await renderMediaViewer();
 }
 async function renderMediaViewer(){
- const item=qcMediaItems[qcMediaIndex];if(!item)return;
- const stage=document.getElementById('viewerStage');stage.innerHTML='';const mime=item.metadata?.mimetype||item.metadata?.contentType||'';
- const isVideo=/video/i.test(mime)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(item.name);
- try{const url=await mediaUrl(item);const el=document.createElement(isVideo?'video':'img');el.src=url;if(isVideo){el.controls=true;el.autoplay=true;el.playsInline=true}else{el.alt=item.name}stage.appendChild(el)}catch(e){stage.textContent='File open nahi ho saki. '+e.message}
- document.getElementById('viewerCaption').textContent=item.name.replace(/^\d+_/,'');document.getElementById('viewerCount').textContent=`${qcMediaIndex+1} / ${qcMediaItems.length}`;
- document.getElementById('viewerPrev').disabled=qcMediaIndex===0;document.getElementById('viewerNext').disabled=qcMediaIndex===qcMediaItems.length-1;
+
+ const item=qcMediaItems[qcMediaIndex];
+
+ if(!item)return;
+
+ const stage=document.getElementById('viewerStage');
+
+ stage.innerHTML='';
+
+ const isVideo=qcMediaIsVideo(item);
+
+ try{
+
+  const url=await mediaUrl(item);
+
+  const el=document.createElement(isVideo?'video':'img');
+
+  el.src=url;
+
+  if(isVideo){
+
+   el.controls=true;
+   el.autoplay=true;
+   el.playsInline=true;
+
+  }else{
+
+   el.alt=item.message_text||item.name;
+
+  }
+
+  stage.appendChild(el);
+
+ }catch(e){
+
+  stage.textContent='File open nahi ho saki. '+e.message;
+
+ }
+
+ document.getElementById('viewerCaption').textContent=
+  item.message_text||item.name;
+
+ document.getElementById('viewerCount').textContent=
+  `${qcMediaIndex+1} / ${qcMediaItems.length}`;
+
+ document.getElementById('viewerPrev').disabled=
+  qcMediaIndex===0;
+
+ document.getElementById('viewerNext').disabled=
+  qcMediaIndex===qcMediaItems.length-1;
 }
 document.getElementById('viewerPrev').addEventListener('click',()=>{if(qcMediaIndex>0){qcMediaIndex--;renderMediaViewer()}});
 document.getElementById('viewerNext').addEventListener('click',()=>{if(qcMediaIndex<qcMediaItems.length-1){qcMediaIndex++;renderMediaViewer()}});
