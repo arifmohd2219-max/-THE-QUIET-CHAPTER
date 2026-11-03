@@ -185,12 +185,87 @@ body.chat-open{overflow:hidden;touch-action:none}
 .letters-modal{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:14px;background:#38233370;backdrop-filter:blur(5px)}.letters-modal-card{width:min(100%,540px);max-height:min(92vh,850px);overflow:auto;padding:22px;border:1px solid #fff;border-radius:23px;background:#fffafc;box-shadow:0 20px 60px #38233345}.letters-modal-card h3{font-size:25px;font-weight:normal;color:#946580;margin-bottom:8px}.letters-modal-card>p{color:#a48999;font-size:13px;line-height:1.6;margin-bottom:17px}.letters-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.letters-choice{padding:23px 12px;border:1px solid #ecd3df;border-radius:17px;background:linear-gradient(145deg,#fff,#fff0f6);color:#946580;cursor:pointer;text-align:center;font-size:17px}.letters-choice span{display:block;font-size:30px;margin-bottom:9px}.letters-form{display:grid;gap:12px}.letters-form label{display:grid;gap:6px;color:#916b82;font:12px Arial,sans-serif}.letters-form input,.letters-form textarea,.letters-form select{width:100%;padding:12px 13px;border:1px solid #e8cedb;border-radius:12px;background:#fff;color:#68475f;font:14px/1.5 Georgia,serif;outline:none}.letters-form textarea{min-height:190px;resize:vertical;white-space:pre-wrap}.letters-form input:focus,.letters-form textarea:focus,.letters-form select:focus{border-color:#bd8eac;box-shadow:0 0 0 3px #bd8eac22}.letters-modal-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:15px}.letters-btn{border:1px solid #e8cedb;border-radius:22px;padding:10px 16px;background:#fff;color:#916b82;cursor:pointer}.letters-btn.primary{border:0;background:linear-gradient(110deg,#e783aa,#a98ed1);color:#fff}.letters-themes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.letters-theme{min-height:90px;padding:12px;border:2px solid transparent;border-radius:13px;text-align:left;cursor:pointer;color:#725469}.letters-theme.selected{border-color:#b16f96;box-shadow:0 0 0 3px #dba9c422}.letters-theme b{display:block;font-size:14px;font-weight:normal}.letters-theme small{display:block;margin-top:6px;font:10px Arial,sans-serif;opacity:.75}.theme-blush{background:linear-gradient(135deg,#ffe0ea,#fff8f3)}.theme-vintage{background:linear-gradient(135deg,#e9d4aa,#fff4d9)}.theme-lavender{background:linear-gradient(135deg,#e6dcff,#faf4ff)}.theme-golden{background:linear-gradient(135deg,#fff0c7,#fffaf0)}.theme-rose{background:linear-gradient(135deg,#ffd8df,#fff0ed)}.theme-midnight{background:linear-gradient(135deg,#28304f,#e6e0f3);color:#fff}
 .letter-reader{position:fixed;inset:0;z-index:50;overflow:auto;padding:clamp(12px,3vw,28px);background:#2d2030ed;display:flex;align-items:flex-start;justify-content:center}.letter-reader-inner{width:min(100%,850px);margin:auto}.letter-reader-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;color:#fff}.letter-reader-top button{border:1px solid #ffffff60;border-radius:22px;padding:9px 14px;background:#ffffff18;color:white;cursor:pointer}.letter-paper{position:relative;min-height:68vh;padding:clamp(34px,7vw,75px) clamp(24px,8vw,82px);border-radius:7px 18px 18px 7px;box-shadow:0 18px 55px #0006;overflow-wrap:anywhere}.letter-paper:before{content:"";position:absolute;inset:12px;border:1px solid currentColor;opacity:.28;pointer-events:none}.letter-paper:after{content:"♡";position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:24px;opacity:.55}.letter-paper.theme-blush{background:linear-gradient(135deg,#fff2f5,#ffe1e9);color:#96556f}.letter-paper.theme-vintage{background:linear-gradient(135deg,#f9edcf,#ead5ad);color:#76563d}.letter-paper.theme-lavender{background:linear-gradient(135deg,#faf5ff,#e9e0ff);color:#6d5b91}.letter-paper.theme-golden{background:linear-gradient(135deg,#fffdf1,#f8edc9);color:#8a7040}.letter-paper.theme-rose{background:linear-gradient(135deg,#fff3ef,#ffdce0);color:#9b5d69}.letter-paper.theme-midnight{background:linear-gradient(135deg,#f5f0ff,#e0d9f4);color:#43456e}.letter-paper-label{text-align:center;font:10px Arial,sans-serif;letter-spacing:3px;text-transform:uppercase;opacity:.7;margin-bottom:20px}.letter-paper h2{text-align:center;font-size:clamp(25px,5vw,38px);font-weight:normal;line-height:1.25;margin:10px 0 24px}.letter-paper-content{font:clamp(16px,2.2vw,19px)/1.9 Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere}.letter-signature{text-align:right;margin-top:35px;font-style:italic;font-size:18px}.letter-date{text-align:center;margin-top:30px;font:11px Arial,sans-serif;opacity:.65}.letter-reader-image{display:block;max-width:100%;max-height:78vh;margin:0 auto;object-fit:contain;transform-origin:center center;transition:transform .15s}.letter-image-controls{display:flex;justify-content:center;gap:9px;margin-top:12px}.letter-image-controls button{border:1px solid #ffffff60;border-radius:20px;padding:8px 13px;background:#ffffff18;color:#fff;cursor:pointer}
 @media(max-width:520px){.letters-head{align-items:flex-start;flex-direction:column}.letters-add{width:100%}.letters-modal-card{padding:17px}.letters-themes{grid-template-columns:1fr 1fr}.letter-paper{min-height:75vh}.letter-paper:before{inset:8px}}
+/* Account Profile Icon */
+.account-profile-button {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e8c5d9;
+  border-radius: 50%;
+  background: linear-gradient(145deg,#fff,#f9e6f1);
+  color: #a36e9b;
+  cursor: pointer;
+  box-shadow: 0 5px 18px #d99dbd25;
+  transition: .25s ease;
+}
+
+.account-profile-button svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+.account-profile-button:hover {
+  transform: translateY(-2px);
+  background: #f9e2ef;
+  box-shadow: 0 7px 20px #d99dbd45;
+}
+
+@media(max-width:520px) {
+  .account-profile-button {
+    top: 10px;
+    right: 8px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+
+/* Account Info full-page settings */
+.account-info-modal{position:fixed;inset:0;z-index:10050;overflow-y:auto;background:linear-gradient(135deg,#fff8fc 0%,#fbf1fb 48%,#fff4f8 100%);color:#4d2948;font-family:Georgia,'Times New Roman',serif}
+.account-info-modal.hidden{display:none!important}
+.account-info-modal:before,.account-info-modal:after{content:'🌸';position:fixed;z-index:0;pointer-events:none;font-size:clamp(90px,15vw,190px);opacity:.17;filter:saturate(.8)}
+.account-info-modal:before{left:-28px;bottom:-30px;transform:rotate(-25deg)}
+.account-info-modal:after{right:-24px;top:75px;transform:rotate(25deg)}
+.account-info-topbar{position:sticky;top:0;z-index:3;min-height:78px;padding:14px clamp(16px,4vw,54px);display:flex;align-items:center;justify-content:space-between;gap:18px;background:#fff9fceF;border-bottom:1px solid #efd9e9;box-shadow:0 5px 22px #7445670d;backdrop-filter:blur(12px)}
+.account-info-brand{font-size:clamp(21px,3vw,34px);font-style:italic;color:#5b2b55;white-space:nowrap}.account-info-brand span{color:#c56e9d}
+.account-info-top-actions{display:flex;align-items:center;gap:12px}.account-info-home,.account-info-close{border:1px solid #e9c9df;border-radius:999px;background:#fff8fc;color:#77466e;padding:9px 16px;font:600 14px Arial,sans-serif;cursor:pointer}
+.account-info-layout{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:clamp(22px,4vw,58px);display:grid;grid-template-columns:290px minmax(0,1fr);gap:34px;align-items:start}
+.account-info-sidebar{padding:18px;border:1px solid #efd9e9;border-radius:26px;background:#ffffffa8;box-shadow:0 12px 35px #8a54751a;position:sticky;top:104px}
+.account-info-nav{width:100%;display:flex;align-items:center;gap:16px;padding:17px 14px;border:0;border-radius:17px;background:transparent;color:#51334f;text-align:left;font:600 17px Georgia,serif;cursor:pointer;transition:.2s}
+.account-info-nav:hover,.account-info-nav.active{background:linear-gradient(100deg,#fbe0ef,#f4e4f7);color:#9e4e80}.account-info-nav .nav-icon{width:30px;text-align:center;font-size:23px}
+.account-info-nav.signout{margin-top:14px;border-top:1px solid #efd9e9;border-radius:0 0 14px 14px;padding-top:24px;color:#8c456f}
+.account-info-main{min-width:0}.account-info-heading{display:flex;align-items:center;gap:18px;margin:0 0 30px}.account-info-heading-icon{font-size:52px;color:#b76e9b}.account-info-heading h2{font-size:clamp(29px,4vw,43px);margin:0 0 7px;color:#54294f}.account-info-heading p{margin:0;color:#86658b;font-size:17px}
+.account-info-profile{display:flex;align-items:center;gap:25px;padding:30px 36px;margin-bottom:28px;border:1.5px solid #dfb9df;border-radius:30px;background:linear-gradient(115deg,#fffdfd,#fff1f8);box-shadow:0 12px 30px #a66e9c12}
+.account-info-avatar{width:116px;height:116px;flex:0 0 116px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#c7a3ce,#b58abf);color:white;font:72px Arial,sans-serif}
+.account-info-profile-email{font-size:clamp(19px,2.2vw,29px);font-weight:600;overflow-wrap:anywhere;color:#4c2a4a}.account-info-member{margin-top:12px;color:#80618a;font-size:18px}.account-info-member span{margin-right:8px}
+.account-info-panel{padding:25px 30px;margin:0 0 24px;border:1.5px solid #e5c5e4;border-radius:27px;background:#ffffffb8;box-shadow:0 10px 26px #a66e9c0d;scroll-margin-top:105px}
+.account-info-panel-head{display:flex;align-items:flex-start;gap:17px;margin-bottom:20px}.account-info-panel-icon{font-size:36px;color:#b35f91}.account-info-panel h3{font-size:clamp(22px,2.6vw,30px);margin:0 0 6px;color:#583054}.account-info-panel p{margin:0;color:#765b7d;font-size:15px;line-height:1.5}
+.account-info-form-row{display:flex;gap:16px;align-items:center}.account-info-input{width:100%;min-width:0;padding:14px 17px;border:1.5px solid #dec6df;border-radius:14px;background:#fffafd;color:#4d2948;font:16px Arial,sans-serif;outline:none}.account-info-input:focus{border-color:#bd79ac;box-shadow:0 0 0 3px #e9c5e544}
+.account-info-action{flex:0 0 auto;min-width:190px;padding:14px 22px;border:0;border-radius:999px;background:linear-gradient(100deg,#b997d0,#d66e9e);color:white;font:600 15px Arial,sans-serif;box-shadow:0 6px 15px #c779a633;cursor:pointer}.account-info-action:disabled{opacity:.6;cursor:wait}
+.account-info-message{min-height:20px;margin:12px 0 0!important;font:14px Arial,sans-serif!important;color:#8b4e78!important}.account-info-message.success{color:#397b5a!important}.account-info-security-note{font:13px Arial,sans-serif;color:#886f88;margin-top:12px}
+@media(max-width:850px){.account-info-layout{grid-template-columns:1fr;gap:22px;padding:22px 16px}.account-info-sidebar{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px}.account-info-nav{font-size:14px;padding:12px 8px;gap:8px}.account-info-nav.signout{margin:0;border:0;padding:12px 8px}.account-info-heading{margin-bottom:20px}.account-info-profile{padding:22px;gap:17px}.account-info-avatar{width:82px;height:82px;flex-basis:82px;font-size:54px}}
+@media(max-width:560px){.account-info-topbar{min-height:65px;padding:10px 13px}.account-info-brand{font-size:19px}.account-info-home,.account-info-close{padding:8px 11px;font-size:12px}.account-info-layout{padding:18px 12px}.account-info-sidebar{grid-template-columns:1fr 1fr}.account-info-nav{font-size:13px}.account-info-nav .nav-icon{font-size:19px;width:22px}.account-info-heading-icon{font-size:38px}.account-info-heading p{font-size:14px}.account-info-profile{padding:18px 15px;border-radius:21px}.account-info-avatar{width:68px;height:68px;flex-basis:68px;font-size:44px}.account-info-profile-email{font-size:17px}.account-info-member{font-size:14px}.account-info-panel{padding:20px 16px;border-radius:21px}.account-info-form-row{flex-direction:column;align-items:stretch}.account-info-action{width:100%;min-width:0}}
 </style>
 </head><body><button id="qcFloatingLock" class="qc-lock-hidden" type="button" aria-label="Lock website" title="Lock website">🔒</button><button id="qcFloatingClose" class="qc-close-hidden" type="button" aria-label="Close section" title="Close section">✕</button><div class="bg" aria-hidden="true"></div>
 <section id="lockPage" class="page"><div class="lock-card"><div class="lock-icon" aria-hidden="true">♡</div><h1 class="lock-title">Enter your PIN to open website</h1><form id="pinForm"><input class="pin-input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="••••••" aria-label="Enter six-digit PIN" autocomplete="off" required><button type="submit" class="primary unlock">Unlock</button></form><p id="pinMessage" aria-live="polite"></p></div></section>
 <section id="authPage" class="page hidden" style="display:flex;align-items:center;justify-content:center;padding:22px"><div class="auth-card"><div class="lock-icon" aria-hidden="true">♡</div><h1 class="auth-title">Welcome back ♡</h1><p class="auth-subtitle">Some worlds are meant for two hearts only.</p><form id="loginForm"><input class="auth-input" id="loginEmail" type="email" placeholder="Email address" autocomplete="username" required><input class="auth-input" id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" required><button class="primary auth-btn" type="submit">Login ♡</button></form><button class="auth-link" id="forgotLink" type="button">Forgot password?</button><form id="resetForm" class="hidden"><p class="auth-subtitle">Enter your email and we'll send a password reset link.</p><input class="auth-input" id="resetEmail" type="email" placeholder="Email address" autocomplete="email" required><button class="primary auth-btn" type="submit">Send reset link</button><button class="auth-link" id="backToLogin" type="button">Back to Login</button></form><form id="newPasswordForm" class="hidden"><p class="auth-subtitle">Choose a new password for your account.</p><input class="auth-input" id="newPassword" type="password" minlength="8" placeholder="New password (8+ characters)" autocomplete="new-password" required><button class="primary auth-btn" type="submit">Save new password</button></form><p id="authMessage" class="auth-message" aria-live="polite"></p><p class="auth-note">Private access · Authorized accounts only ♡</p></div></section>
 <section id="entryPage" class="page hidden"><div class="entry-card"><p class="eyebrow" id="welcomeGreeting">A little place to call ours ♡</p><div class="entry-heart" aria-hidden="true">♡</div><h1 class="entry-title">Hamari Chhoti Si Duniya</h1><p class="entry-subtitle">Some stories are felt, not told.</p><p class="entry-quote">“Kuch kahaniyan lafzon se nahi, feelings se likhi jaati hain…”</p><div class="thought" id="dailyThought"></div><button type="button" id="enterWorldButton" class="primary enter">♡ Enter Our World ♡</button><p class="tiny-note">Bas ek chhoti si duniya, apne andaaz mein.</p></div></section>
-<section id="homePage" class="page hidden"><div class="home-wrap"><header class="home-header"><div class="home-mark" aria-hidden="true">♡</div><h1 class="home-title">Hamari Chhoti Si Duniya</h1><p class="home-subtitle">Kuch feelings, kuch khwaab,<br>aur ek kahani jo apni hai. ♡</p><div class="profile-wrap" aria-label="Two photo frames with a heart between them"><div class="couple-photos"><div class="photo-frame" aria-label="Her photo"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="23" r="11" stroke="currentColor" stroke-width="2.4"/><path d="M12 53c2.5-11 9.5-16 20-16s17.5 5 20 16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><img src="her_photo.png" alt="Her photo" onload="this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='none'" onerror="this.style.display='none'"><span class="photo-label">Photo 1</span></div><div class="couple-heart" aria-label="love">❤️</div><div class="photo-frame" aria-label="My photo"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="23" r="11" stroke="currentColor" stroke-width="2.4"/><path d="M12 53c2.5-11 9.5-16 20-16s17.5 5 20 16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><img src="my_photo.jpg" alt="My photo" onload="this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='none'" onerror="this.style.display='none'"><span class="photo-label">Photo 2</span></div></div><p class="profile-caption">Two photos, one heart <span>♡</span></p></div><div class="home-thought" id="homeThought"></div></header><h2 class="section-heading">Humari Duniya Ke Kuch Kone ♡</h2><div class="section-grid">
+<section id="homePage" class="page hidden"><div class="home-wrap"><header class="home-header">
+<button id="accountProfileButton" class="account-profile-button" type="button" aria-label="Open Account Info" title="Account Info">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="8" r="4"></circle>
+    <path d="M4 21c0-4.2 3.2-7 8-7s8 2.8 8 7"></path>
+  </svg>
+</button>
+<div class="home-mark" aria-hidden="true">♡</div><h1 class="home-title">Hamari Chhoti Si Duniya</h1><p class="home-subtitle">Kuch feelings, kuch khwaab,<br>aur ek kahani jo apni hai. ♡</p><div class="profile-wrap" aria-label="Two photo frames with a heart between them"><div class="couple-photos"><div class="photo-frame" aria-label="Her photo"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="23" r="11" stroke="currentColor" stroke-width="2.4"/><path d="M12 53c2.5-11 9.5-16 20-16s17.5 5 20 16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><img src="her_photo.png" alt="Her photo" onload="this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='none'" onerror="this.style.display='none'"><span class="photo-label">Photo 1</span></div><div class="couple-heart" aria-label="love">❤️</div><div class="photo-frame" aria-label="My photo"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="23" r="11" stroke="currentColor" stroke-width="2.4"/><path d="M12 53c2.5-11 9.5-16 20-16s17.5 5 20 16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><img src="my_photo.jpg" alt="My photo" onload="this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='none'" onerror="this.style.display='none'"><span class="photo-label">Photo 2</span></div></div><p class="profile-caption">Two photos, one heart <span>♡</span></p></div><div class="home-thought" id="homeThought"></div></header><h2 class="section-heading">Humari Duniya Ke Kuch Kone ♡</h2><div class="section-grid">
 <button class="section-card section-card-chats" data-section="chats" type="button"><span class="card-icon">1 SMS👇</span><span class="card-title">Chats Sirf Hum Dono Ke Liye</span><span class="card-caption">Ek shared private corner</span></button>
 <button class="section-card section-card-photos" data-section="photos" type="button"><span class="card-icon">2 📸</span><span class="card-title">Photos aur Videos</span><span class="card-caption">Kuch tasveerein, kuch yaadein</span></button>
 <button class="section-card section-card-diary" data-section="diary" type="button"><span class="card-icon">3 📖</span><span class="card-title">THE QUIET CHAPTER/DAIRY</span><span class="card-caption">Hamari kahani, ek-ek page par</span></button>
@@ -242,6 +317,7 @@ body.chat-open{overflow:hidden;touch-action:none}
 </div>
 
 <div id="notice" class="hidden" role="dialog" aria-modal="true" aria-labelledby="noticeTitle"><div class="notice-card"><div class="notice-heart" aria-hidden="true">♡</div><h2 id="noticeTitle" class="notice-title">Yeh kona abhi tayyar ho raha hai</h2><p id="noticeText" class="notice-text">Is section ka content hum baad mein add karenge. ♡</p><button id="noticeClose" class="notice-button" type="button">Theek hai ♡</button></div></div>
+
 
 <style>
 #chatOverlay{position:fixed;inset:0;z-index:40;background:#f8efe6;color:#543c32;display:flex;align-items:center;justify-content:center;padding:12px;font-family:Arial,sans-serif}
@@ -1745,6 +1821,143 @@ body.qc-chat-keyboard-open #qcFloatingClose:active{transform:scale(.96)!importan
  function pauseSiteMedia(){document.querySelectorAll('audio,video').forEach(media=>{try{media.pause()}catch(_){}})}
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')pauseSiteMedia()});
  window.addEventListener('pagehide',pauseSiteMedia);
+})();
+</script>
+<!-- ACCOUNT INFO PAGE: isolated account settings; other website sections remain unchanged. -->
+<div id="accountInfoModal" class="account-info-modal hidden" role="dialog" aria-modal="true" aria-label="Account Info">
+  <header class="account-info-topbar">
+    <div class="account-info-brand">The Quiet Chapter <span>♡</span></div>
+    <div class="account-info-top-actions">
+      <button type="button" class="account-info-home" id="accountInfoHome">⌂ Home</button>
+      <button type="button" class="account-info-close" id="accountInfoClose" aria-label="Close Account Info">✕</button>
+    </div>
+  </header>
+  <div class="account-info-layout">
+    <aside class="account-info-sidebar" aria-label="Account settings navigation">
+      <button type="button" class="account-info-nav active" data-account-target="accountOverview"><span class="nav-icon">♙</span>Account Info</button>
+      <button type="button" class="account-info-nav" data-account-target="accountPassword"><span class="nav-icon">♙</span>Change Password</button>
+      <button type="button" class="account-info-nav" data-account-target="accountEmail"><span class="nav-icon">✉</span>Update Email</button>
+      <button type="button" class="account-info-nav signout" id="accountInfoLogout"><span class="nav-icon">⇥</span>Sign Out</button>
+    </aside>
+    <main class="account-info-main">
+      <div class="account-info-heading"><div class="account-info-heading-icon">♙</div><div><h2>Account Info</h2><p>Manage your account details and security.</p></div></div>
+      <section class="account-info-profile" id="accountOverview">
+        <div class="account-info-avatar" aria-hidden="true">♙</div>
+        <div><div class="account-info-profile-email" id="accountInfoEmail">Loading account...</div><div class="account-info-member"><span>▦</span><span id="accountInfoMemberSince">Member since —</span></div><div class="account-info-security-note" id="accountInfoStatus">Checking account status...</div></div>
+      </section>
+      <section class="account-info-panel" id="accountEmail">
+        <div class="account-info-panel-head"><div class="account-info-panel-icon">✉</div><div><h3>Update Email</h3><p>Change the email address used for login and account recovery.</p></div></div>
+        <form id="accountInfoEmailForm"><div class="account-info-form-row"><input class="account-info-input" id="accountInfoNewEmail" type="email" placeholder="Enter new email address" autocomplete="email" required><button class="account-info-action" type="submit">✎ &nbsp; Update Email</button></div></form>
+        <p class="account-info-message" id="accountInfoEmailMessage" aria-live="polite"></p>
+      </section>
+      <section class="account-info-panel" id="accountPassword">
+        <div class="account-info-panel-head"><div class="account-info-panel-icon">♙</div><div><h3>Change Password</h3><p>Update your password to keep your account secure.</p></div></div>
+        <form id="accountInfoPasswordForm"><div class="account-info-form-row"><input class="account-info-input" id="accountInfoNewPassword" type="password" minlength="8" placeholder="New password (minimum 8 characters)" autocomplete="new-password" required><button class="account-info-action" type="submit">✎ &nbsp; Change Password</button></div></form>
+        <p class="account-info-message" id="accountInfoPasswordMessage" aria-live="polite"></p>
+        <p class="account-info-security-note">Password update ke liye aapka active login session required hai.</p>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  const modal = document.getElementById('accountInfoModal');
+  const openBtn = document.getElementById('accountProfileButton');
+  const closeBtn = document.getElementById('accountInfoClose');
+  const emailBox = document.getElementById('accountInfoEmail');
+  const statusBox = document.getElementById('accountInfoStatus');
+  const memberBox = document.getElementById('accountInfoMemberSince');
+  const emailMessage = document.getElementById('accountInfoEmailMessage');
+  const passwordMessage = document.getElementById('accountInfoPasswordMessage');
+
+  function showMessage(element, message, success=false) {
+    element.textContent = message;
+    element.classList.toggle('success', success);
+  }
+  function closeAccountInfo() { modal.classList.add('hidden'); }
+
+  openBtn.addEventListener('click', async function () {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    emailBox.textContent = 'Loading account...';
+    statusBox.textContent = 'Checking account status...';
+    memberBox.textContent = 'Member since —';
+    showMessage(emailMessage, '');
+    showMessage(passwordMessage, '');
+    document.getElementById('accountInfoNewEmail').value = '';
+    document.getElementById('accountInfoNewPassword').value = '';
+    try {
+      const { data, error } = await qcClient.auth.getUser();
+      if (error || !data.user) throw error || new Error('Login session not found.');
+      const user = data.user;
+      emailBox.textContent = user.email || 'Email not available';
+      statusBox.textContent = user.email_confirmed_at ? 'Account verified and active ♡' : 'Email verification pending';
+      if (user.created_at) {
+        const created = new Date(user.created_at);
+        memberBox.textContent = 'Member since ' + created.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+      }
+      document.getElementById('accountInfoNewEmail').placeholder = user.email || 'Enter new email address';
+    } catch (err) {
+      emailBox.textContent = 'Not available';
+      statusBox.textContent = 'Could not verify login session. Please sign in again.';
+    }
+  });
+
+  closeBtn.addEventListener('click', closeAccountInfo);
+  document.getElementById('accountInfoHome').addEventListener('click', closeAccountInfo);
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeAccountInfo(); });
+  modal.addEventListener('click', event => { if (event.target === modal) closeAccountInfo(); });
+  const originalBodyOverflow = document.body.style.overflow;
+  const closeObserver = new MutationObserver(() => { if (modal.classList.contains('hidden')) document.body.style.overflow = originalBodyOverflow; });
+  closeObserver.observe(modal, {attributes:true, attributeFilter:['class']});
+
+  document.querySelectorAll('[data-account-target]').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('[data-account-target]').forEach(item => item.classList.remove('active'));
+      button.classList.add('active');
+      document.getElementById(button.dataset.accountTarget).scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+
+  document.getElementById('accountInfoEmailForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = event.submitter;
+    const newEmail = document.getElementById('accountInfoNewEmail').value.trim();
+    if (!newEmail) return;
+    button.disabled = true;
+    showMessage(emailMessage, 'Submitting email change request...');
+    try {
+      const { data, error } = await qcClient.auth.updateUser({ email: newEmail });
+      if (error) throw error;
+      showMessage(emailMessage, 'Confirmation email bhej di gayi hai. Inbox mein link confirm karne ke baad email update hoga.', true);
+      if (data.user?.email) emailBox.textContent = data.user.email;
+      document.getElementById('accountInfoNewEmail').value = '';
+    } catch (err) {
+      showMessage(emailMessage, 'Email update nahi hua: ' + (err.message || 'Please try again.'));
+    } finally { button.disabled = false; }
+  });
+
+  document.getElementById('accountInfoPasswordForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = event.submitter;
+    const password = document.getElementById('accountInfoNewPassword').value;
+    if (password.length < 8) { showMessage(passwordMessage, 'Password minimum 8 characters ka hona chahiye.'); return; }
+    button.disabled = true;
+    showMessage(passwordMessage, 'Updating password...');
+    try {
+      const { error } = await qcClient.auth.updateUser({ password });
+      if (error) throw error;
+      showMessage(passwordMessage, 'Password successfully update ho gaya ♡', true);
+      document.getElementById('accountInfoNewPassword').value = '';
+    } catch (err) {
+      showMessage(passwordMessage, 'Password update nahi hua: ' + (err.message || 'Please try again.'));
+    } finally { button.disabled = false; }
+  });
+
+  document.getElementById('accountInfoLogout').addEventListener('click', () => {
+    if (confirm('Kya aap account se sign out karna chahte hain?')) document.getElementById('logoutButton').click();
+  });
 })();
 </script>
 </body></html>
