@@ -336,7 +336,9 @@ function showLoginForm(){document.getElementById('loginForm').classList.remove('
 document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;setAuthMessage('Logging in…');try{const {data,error}=await qcClient.auth.signInWithPassword({email:document.getElementById('loginEmail').value.trim(),password:document.getElementById('loginPassword').value});if(error)throw error;window.__qcAuthenticated=!!data.session;setAuthMessage('Login successful ♡',true);showWelcome()}catch(err){setAuthMessage('Login failed. Email/password check karo, phir try karo.')}finally{btn.disabled=false}});
 document.getElementById('forgotLink').addEventListener('click',()=>{document.getElementById('loginForm').classList.add('hidden');document.getElementById('forgotLink').classList.add('hidden');document.getElementById('resetForm').classList.remove('hidden');document.getElementById('resetEmail').value=document.getElementById('loginEmail').value;setAuthMessage('')});
 document.getElementById('backToLogin').addEventListener('click',showLoginForm);
-document.getElementById('resetForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;setAuthMessage('Sending reset link…');try{const email=document.getElementById('resetEmail').value.trim();const {error}=await qcClient.auth.resetPasswordForEmail(email,{redirectTo:SUPABASE_URL.replace(/\/$/,'') ? 'https://arifmohd2219-max.github.io/-THE-QUIET-CHAPTER/' : undefined});if(error)throw error;setAuthMessage('Agar email account se linked hai, reset instructions us par aa jayengi. Email check karo.',true)}catch(err){setAuthMessage('Reset link send nahi ho saka. Supabase URL Configuration aur email settings check karni hongi.')}finally{btn.disabled=false}});
+document.getElementById('resetForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;setAuthMessage('Sending reset link…');try{const email=document.getElementById('resetEmail').value.trim();const {error}=await qcClient.auth.resetPasswordForEmail(email,{
+  redirectTo:'https://pixelnest2219.github.io/-THE-QUIET-CHAPTER/'
+});if(error)throw error;setAuthMessage('Agar email account se linked hai, reset instructions us par aa jayengi. Email check karo.',true)}catch(err){setAuthMessage('Reset link send nahi ho saka. Supabase URL Configuration aur email settings check karni hongi.')}finally{btn.disabled=false}});
 document.getElementById('newPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;try{const password=document.getElementById('newPassword').value;const {error}=await qcClient.auth.updateUser({password});if(error)throw error;setAuthMessage('Password updated. Ab login karo.',true);await qcClient.auth.signOut();window.__qcAuthenticated=false;showLoginForm()}catch(err){setAuthMessage('Password update failed. Reset email link dobara open karo.')}finally{btn.disabled=false}});
 qcClient.auth.onAuthStateChange((event,session)=>{window.__qcAuthenticated=!!session;if(event==='PASSWORD_RECOVERY'){document.getElementById('loginForm').classList.add('hidden');document.getElementById('forgotLink').classList.add('hidden');document.getElementById('resetForm').classList.add('hidden');document.getElementById('newPasswordForm').classList.remove('hidden');setAuthMessage('Set your new password below.',true)}});
 document.getElementById('logoutButton').addEventListener('click',async()=>{await qcClient.auth.signOut();window.__qcAuthenticated=false;lockWebsite()});
@@ -751,42 +753,48 @@ function renderMediaGrid(){
 
     del.disabled=true;
 
-    try{
+    try {
 
-     const {error:updateError}=await qcClient
+  // CHAT se aayi media ka database record update karo
+  if (item.message_id) {
+
+    const { error: updateError } = await qcClient
       .from('qc_chat_messages')
       .update({
-       media_path:null,
-       message_type:'text',
-       message_text:'Media deleted.'
+        media_path: null,
+        message_type: 'text',
+        message_text: 'Media deleted.'
       })
-      .eq('id',item.message_id);
+      .eq('id', item.message_id);
 
-     if(updateError)throw updateError;
+    if (updateError) throw updateError;
 
-     const {error:storageError}=await qcClient
-      .storage
-      .from(QC_MEDIA_BUCKET)
-      .remove([item.path]);
+  }
 
-     if(storageError){
-      console.warn('Storage cleanup failed:',storageError.message);
-     }
+  // Dono types ki media Storage se delete karo
+  const { error: storageError } = await qcClient
+    .storage
+    .from(QC_MEDIA_BUCKET)
+    .remove([item.path]);
 
-     const set=qcGetFavourites();
-     set.delete(key);
-     qcSaveFavourites(set);
+  if (storageError) throw storageError;
 
-     await openMediaGallery();
+  // Favourite list se remove karo
+  const set = qcGetFavourites();
+  set.delete(key);
+  qcSaveFavourites(set);
 
-     mediaSay('Photo/video delete ho gaya.');
+  // Gallery refresh karo
+  await openMediaGallery();
 
-    }catch(err){
+  mediaSay('Photo/video delete ho gaya.');
 
-     mediaSay('Delete fail hua: '+err.message);
-     del.disabled=false;
+} catch (err) {
 
-    }
+  mediaSay('Delete fail hua: ' + err.message);
+  del.disabled = false;
+
+}
 
    });
 
