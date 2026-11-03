@@ -338,12 +338,69 @@ document.getElementById('forgotLink').addEventListener('click',()=>{document.get
 document.getElementById('backToLogin').addEventListener('click',showLoginForm);
 document.getElementById('resetForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;setAuthMessage('Sending reset link…');try{const email=document.getElementById('resetEmail').value.trim();const {error}=await qcClient.auth.resetPasswordForEmail(email,{
   redirectTo:'https://pixelnest2219.github.io/-THE-QUIET-CHAPTER/'
-});if(error)throw error;setAuthMessage('Agar email account se linked hai, reset instructions us par aa jayengi. Email check karo.',true)}catch(err){setAuthMessage('Reset link send nahi ho saka. Supabase URL Configuration aur email settings check karni hongi.')}finally{btn.disabled=false}});
+});if(error)throw error;setAuthMessage('Agar email account se linked hai, reset instructions us par aa jayengi. Email check karo.',true)}catch(err){console.error('Password Reset Error:',err);setAuthMessage('Reset Error: '+(err.message||'Unknown error'))}finally{btn.disabled=false}});
 document.getElementById('newPasswordForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;try{const password=document.getElementById('newPassword').value;const {error}=await qcClient.auth.updateUser({password});if(error)throw error;setAuthMessage('Password updated. Ab login karo.',true);await qcClient.auth.signOut();window.__qcAuthenticated=false;showLoginForm()}catch(err){setAuthMessage('Password update failed. Reset email link dobara open karo.')}finally{btn.disabled=false}});
-qcClient.auth.onAuthStateChange((event,session)=>{window.__qcAuthenticated=!!session;if(event==='PASSWORD_RECOVERY'){document.getElementById('loginForm').classList.add('hidden');document.getElementById('forgotLink').classList.add('hidden');document.getElementById('resetForm').classList.add('hidden');document.getElementById('newPasswordForm').classList.remove('hidden');setAuthMessage('Set your new password below.',true)}});
+window.__qcPasswordRecovery = false;
+
+qcClient.auth.onAuthStateChange((event, session) => {
+  window.__qcAuthenticated = !!session;
+
+  if (event === 'PASSWORD_RECOVERY') {
+    window.__qcPasswordRecovery = true;
+
+    showPage(authPage);
+
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('forgotLink').classList.add('hidden');
+    document.getElementById('resetForm').classList.add('hidden');
+    document.getElementById('newPasswordForm').classList.remove('hidden');
+
+    setAuthMessage('Set your new password below.', true);
+  }
+});
 document.getElementById('logoutButton').addEventListener('click',async()=>{await qcClient.auth.signOut();window.__qcAuthenticated=false;lockWebsite()});
-// If already signed in, the PIN still must be entered; after PIN the user can continue without re-entering credentials.
+// Keep password recovery separate from normal login.
 const originalUnlock = unlockWebsite;
+
+unlockWebsite = async function() {
+  unlocked = true;
+  hiddenAt = null;
+  pinInput.value = '';
+  pinMessage.textContent = '';
+
+  try {
+    const { data, error } = await qcClient.auth.getSession();
+
+    if (error) throw error;
+
+    window.__qcAuthenticated = !!data.session;
+
+    // Recovery session must open the new password form, not Welcome.
+    if (window.__qcPasswordRecovery) {
+      showPage(authPage);
+
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('forgotLink').classList.add('hidden');
+      document.getElementById('resetForm').classList.add('hidden');
+      document.getElementById('newPasswordForm').classList.remove('hidden');
+
+      setAuthMessage('Set your new password below.', true);
+      return;
+    }
+
+    if (window.__qcAuthenticated) {
+      showWelcome();
+    } else {
+      showPage(authPage);
+      setAuthMessage('');
+      document.getElementById('loginEmail').focus();
+    }
+
+  } catch (e) {
+    showPage(authPage);
+    setAuthMessage('Unable to verify your session. Please try again.');
+  }
+};
 unlockWebsite = async function(){unlocked=true;hiddenAt=null;pinInput.value='';pinMessage.textContent='';try{const {data}=await qcClient.auth.getSession();window.__qcAuthenticated=!!data.session;if(window.__qcAuthenticated){showWelcome()}else{showPage(authPage);setAuthMessage('');document.getElementById('loginEmail').focus()}}catch(e){showPage(authPage)}};
 </script>
 
