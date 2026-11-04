@@ -1140,7 +1140,7 @@ chatMessages.addEventListener('click',async e=>{const b=e.target.closest('button
 });
 document.getElementById('chatAttachBtn').addEventListener('click',()=>document.getElementById('chatFileInput').click());
 document.getElementById('chatFileInput').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;if(!qcChatUser){chatStatus.textContent='Pehle login karo.';return}if(!/^image\/|^video\//i.test(file.type)){chatStatus.textContent='Photo ya video select karo.';e.target.value='';return}if(file.size>100*1024*1024){chatStatus.textContent='Maximum file size 100 MB hai.';e.target.value='';return}chatStatus.textContent='Media upload ho rahi hai…';try{const path=`chat/${qcChatUser.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;const {error}=await qcClient.storage.from(QC_CHAT_BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;await qcChatSend(file.name,file.type.startsWith('video/')?'video':'image',path);chatStatus.textContent='Media sent ♡'}catch(err){chatStatus.textContent='Media upload failed: '+err.message+' · bucket permissions check karo'}finally{e.target.value=''}});
-document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qcChatRecorder&&qcChatRecorder.state==='recording'){qcChatRecorder.stop();document.getElementById('chatVoiceBtn').textContent='🎙 Record voice';return}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});qcChatChunks=[];qcChatRecorder=new MediaRecorder(stream);qcChatRecorder.ondataavailable=e=>{if(e.data.size)qcChatChunks.push(e.data)};qcChatRecorder.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(qcChatChunks,{type:qcChatRecorder.mimeType||'audio/webm'});if(!blob.size)return;const url=URL.createObjectURL(blob);const send=confirm('Voice recording ready. OK = send, Cancel = discard.');if(!send){URL.revokeObjectURL(url);chatStatus.textContent='Voice recording discarded.';return}try{const path=`chat/${qcChatUser.id}/${Date.now()}_voice.webm`;const {error}=await qcClient.storage.from(QC_CHAT_BUCKET).upload(path,blob,{upsert:false,contentType:blob.type});if(error)throw error;await qcChatSend('Voice message','voice',path);chatStatus.textContent='Voice message sent ♡'}catch(err){chatStatus.textContent='Voice upload failed: '+err.message+' · bucket permissions check karo'}URL.revokeObjectURL(url)};qcChatRecorder.start();document.getElementById('chatVoiceBtn').textContent='■ Stop recording';chatStatus.textContent='Recording… click Stop when finished.'}catch(err){chatStatus.textContent='Microphone unavailable: '+err.message}});
+/* [fixed] legacy voice handler removed: it was always replaced by the later voice popup handler. */
 
 </script>
 
@@ -1181,21 +1181,7 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
  // Rebind attachment button defensively to avoid stale/overlapping listeners.
  const oldAttach=$('chatAttachBtn');
  if(oldAttach){const btn=oldAttach.cloneNode(true);oldAttach.replaceWith(btn);btn.addEventListener('click',()=>{const input=$('chatFileInput');if(!input){status.textContent='Photo/video picker missing in this file.';return}input.value='';try{input.click()}catch(err){status.textContent='Unable to open gallery: '+err.message}})}
- // Rebind microphone with a complete record -> stop -> preview -> send/discard flow.
- const oldMic=$('chatVoiceBtn');
- if(oldMic){const mic=oldMic.cloneNode(true);oldMic.replaceWith(mic);let recorder=null,stream=null,chunks=[],previewUrl=null,recording=false;
-   if(shell&&!$('qcVoicePreview')){const panel=document.createElement('div');panel.id='qcVoicePreview';panel.hidden=true;panel.innerHTML='<strong>Voice message preview</strong><audio controls></audio><div><button type="button" id="qcVoiceSend">Send voice</button><button type="button" id="qcVoiceDiscard">Delete</button></div>';shell.appendChild(panel)}
-   const panel=$('qcVoicePreview'),audio=panel?.querySelector('audio');
-   const cleanup=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}if(audio)audio.removeAttribute('src');if(panel)panel.hidden=true;mic.textContent='🎙 Record voice';recording=false;recorder=null;chunks=[]};
-   mic.addEventListener('click',async()=>{
-    if(recording&&recorder&&recorder.state==='recording'){recorder.stop();mic.textContent='Preparing preview…';mic.disabled=true;return}
-    if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){status.textContent='Voice recording is not supported in this browser. Open the HTTPS website in Chrome and allow microphone access.';return}
-    try{stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];let mime='';for(const t of ['audio/webm;codecs=opus','audio/webm','audio/mp4']){if(MediaRecorder.isTypeSupported?.(t)){mime=t;break}}recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};recorder.onerror=e=>{status.textContent='Recording error: '+(e.error?.message||'Please try again');cleanup();mic.disabled=false};recorder.onstop=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}const blob=new Blob(chunks,{type:recorder?.mimeType||'audio/webm'});if(!blob.size){status.textContent='No audio captured. Try again.';cleanup();mic.disabled=false;return}previewUrl=URL.createObjectURL(blob);if(audio)audio.src=previewUrl;if(panel)panel.hidden=false;mic.textContent='🎙 Record voice';mic.disabled=false;recording=false;status.textContent='Listen to the preview, then Send voice or Delete.';panel.dataset.blobType=blob.type;window.__qcPendingVoiceBlob=blob};recorder.start();recording=true;mic.textContent='■ Stop recording';status.textContent='Recording… tap Stop when finished.'}
-    catch(err){cleanup();mic.disabled=false;status.textContent='Microphone unavailable: '+(err.name==='NotAllowedError'?'Allow microphone permission in browser settings.':err.message||'Check microphone permission and HTTPS.')}
-   });
-   $('qcVoiceDiscard')?.addEventListener('click',()=>{window.__qcPendingVoiceBlob=null;cleanup();status.textContent='Voice recording discarded.'});
-   $('qcVoiceSend')?.addEventListener('click',async()=>{const blob=window.__qcPendingVoiceBlob;if(!blob)return;if(!qcChatUser && !window.__qcAuthenticated){status.textContent='Please unlock/login first.';return}const user=qcChatUser;if(!user){status.textContent='Chat session is not ready. Close and reopen chat, then try again.';return}const send=$('qcVoiceSend');send.disabled=true;try{const ext=blob.type.includes('mp4')?'m4a':'webm';const path=`chat/${user.id}/${Date.now()}_voice.${ext}`;const {error}=await qcClient.storage.from('private-memories').upload(path,blob,{upsert:false,contentType:blob.type||'audio/webm'});if(error)throw error;const {error:insertError}=await qcClient.from('qc_chat_messages').insert({sender_id:user.id,message_text:'Voice message',message_type:'voice',media_path:path,reply_to:window.qcChatReplyTo?.id||null});if(insertError)throw insertError;window.__qcPendingVoiceBlob=null;cleanup();status.textContent='Voice message sent ♡'}catch(err){status.textContent='Voice upload failed: '+(err.message||'Check private-memories bucket permissions')}finally{send.disabled=false}});
- }
+ // [fixed] legacy microphone rebind removed: superseded by the voice popup handler in qc-issue-fixes-js.
  // Realtime online status + persistent last-seen timestamp (Supabase table: qc_user_presence).
  let presenceChannel=null,presenceTimer=null,presenceStarting=false,presenceUserId=null;
  const QC_PRESENCE_USERS=['807c1735-5e4a-4402-843a-61d7767ff043','a16253ac-e839-4abd-8a7a-43643f3a06f3'];
@@ -1427,7 +1413,13 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
 #qcVoiceRecorderPopup .qc-vp-rec strong{font-variant-numeric:tabular-nums;font-size:20px;margin-left:5px}
 #qcVoiceRecorderPopup .qc-vp-dot{width:10px;height:10px;border-radius:50%;background:#d73545;animation:qcVoicePulse 1s infinite}
 @keyframes qcVoicePulse{50%{opacity:.25;transform:scale(.8)}}
-#qcVoiceRecorderPopup audio{display:block;width:100%;margin:10px 0 16px}
+#qcVoiceRecorderPopup audio{display:none!important}
+#qcVoiceRecorderPopup .qc-vp-player{display:flex;align-items:center;gap:12px;margin:10px 0 16px;padding:10px 12px;border:1px solid #e9c5b5;border-radius:18px;background:#fff3ec}
+#qcVoiceRecorderPopup .qc-vp-player[hidden]{display:none!important}
+#qcVoiceRecorderPopup .qc-vp-play{flex:0 0 52px;width:52px;height:52px;padding:0;border-radius:50%;font-size:20px;display:grid;place-items:center}
+#qcVoiceRecorderPopup .qc-vp-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;text-align:left}
+#qcVoiceRecorderPopup .qc-vp-mid input{width:100%;height:6px;accent-color:#a45c65;cursor:pointer;margin:0}
+#qcVoiceRecorderPopup .qc-vp-mid span{font:12px Arial,sans-serif;color:#80675e;font-variant-numeric:tabular-nums}
 #qcVoiceRecorderPopup .qc-vp-actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
 #qcVoiceRecorderPopup button{border:0;border-radius:13px;padding:11px 17px;background:#9f555e;color:#fffaf5;font-weight:700;cursor:pointer}
 #qcVoiceRecorderPopup #qcVoiceDeleteNow{background:#ead8cf;color:#68473d}
@@ -1443,12 +1435,12 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
  if(oldVoice){
   const mic=oldVoice.cloneNode(true);oldVoice.replaceWith(mic);
   mic.textContent='🎤 Voice note';mic.setAttribute('aria-label','Record a voice message');
-  let recorder=null,stream=null,chunks=[],blob=null,previewUrl=null,timer=null,startedAt=0;
+  let recorder=null,stream=null,chunks=[],blob=null,previewUrl=null,timer=null,startedAt=0,recDur=0;
   const shell=overlay.querySelector('.chat-shell');
   let panel=$('qcVoiceRecorderPopup');
   if(!panel&&shell){
    panel=document.createElement('div');panel.id='qcVoiceRecorderPopup';panel.hidden=true;
-   panel.innerHTML='<div class="qc-vp-card"><div class="qc-vp-title">Voice message ♡</div><div class="qc-vp-rec" id="qcVoiceRecState"><span class="qc-vp-dot"></span><span>REC</span><strong id="qcVoiceTimer">00:00</strong></div><audio id="qcVoiceAudio" controls></audio><div class="qc-vp-actions"><button type="button" id="qcVoiceStop">■ Stop</button><button type="button" id="qcVoiceSendNow" hidden>Send voice</button><button type="button" id="qcVoiceDeleteNow" hidden>Delete</button></div></div>';
+   panel.innerHTML='<div class="qc-vp-card"><div class="qc-vp-title">Voice message ♡</div><div class="qc-vp-rec" id="qcVoiceRecState"><span class="qc-vp-dot"></span><span>REC</span><strong id="qcVoiceTimer">00:00</strong></div><div class="qc-vp-player" id="qcVoicePlayer" hidden><button type="button" id="qcVoicePlay" class="qc-vp-play" aria-label="Play preview">▶</button><div class="qc-vp-mid"><input type="range" id="qcVoiceSeek" min="0" max="100" value="0" step="0.1" aria-label="Seek preview"><span id="qcVoiceTime">0:00 / 0:00</span></div></div><audio id="qcVoiceAudio" preload="metadata"></audio><div class="qc-vp-actions"><button type="button" id="qcVoiceStop">■ Stop</button><button type="button" id="qcVoiceSendNow" hidden>Send voice</button><button type="button" id="qcVoiceDeleteNow" hidden>Delete</button></div></div>';
    shell.appendChild(panel);
   }
   const timerEl=$('qcVoiceTimer'),recState=$('qcVoiceRecState'),audio=$('qcVoiceAudio');
@@ -1456,9 +1448,18 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
   const stopTracks=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}};
   const clearTimer=()=>{if(timer){clearInterval(timer);timer=null}};
   const releasePreview=()=>{if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}if(audio){audio.pause();audio.removeAttribute('src');audio.load()}};
-  const resetVoice=()=>{clearTimer();stopTracks();releasePreview();if(panel)panel.hidden=true;if($('qcVoiceStop'))$('qcVoiceStop').hidden=false;if($('qcVoiceSendNow'))$('qcVoiceSendNow').hidden=true;if($('qcVoiceDeleteNow'))$('qcVoiceDeleteNow').hidden=true;if(recState)recState.hidden=false;if(timerEl)timerEl.textContent='00:00';mic.disabled=false;mic.textContent='🎤 Voice note';recorder=null;chunks=[];blob=null};
+  const resetVoice=()=>{clearTimer();stopTracks();releasePreview();if(panel)panel.hidden=true;if($('qcVoiceStop'))$('qcVoiceStop').hidden=false;if($('qcVoiceSendNow'))$('qcVoiceSendNow').hidden=true;if($('qcVoiceDeleteNow'))$('qcVoiceDeleteNow').hidden=true;if(recState)recState.hidden=false;if(pPlayer)pPlayer.hidden=true;if(pSeek)pSeek.value='0';if(pTime)pTime.textContent='0:00 / 0:00';if(pPlay)pPlay.textContent='▶';recDur=0;if(timerEl)timerEl.textContent='00:00';mic.disabled=false;mic.textContent='🎤 Voice note';recorder=null;chunks=[];blob=null};
   const stopRecording=()=>{if(recorder&&recorder.state==='recording'){recorder.stop();clearTimer();const stop=$('qcVoiceStop');if(stop){stop.disabled=true;stop.textContent='Preparing…'}}};
   $('qcVoiceStop')?.addEventListener('click',stopRecording);
+  // Preview player (custom play/pause, progress, current/total time).
+  const pPlayer=$('qcVoicePlayer'),pPlay=$('qcVoicePlay'),pSeek=$('qcVoiceSeek'),pTime=$('qcVoiceTime');
+  const mmss=t=>{t=Number.isFinite(t)&&t>0?t:0;return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
+  const totalDur=()=>Number.isFinite(audio?.duration)&&audio.duration>0?audio.duration:recDur;
+  const syncPreview=()=>{if(!audio)return;const d=totalDur();if(pSeek)pSeek.value=d>0?String(Math.min(100,audio.currentTime/d*100)):'0';if(pTime)pTime.textContent=mmss(audio.currentTime)+' / '+mmss(d);if(pPlay){pPlay.textContent=audio.paused?'▶':'Ⅱ';pPlay.setAttribute('aria-label',audio.paused?'Play preview':'Pause preview')}};
+  pPlay?.addEventListener('click',async()=>{if(!audio||!audio.src)return;if(audio.paused){try{await audio.play()}catch(_){}}else audio.pause();syncPreview()});
+  pSeek?.addEventListener('input',()=>{const d=totalDur();if(audio&&d>0){try{audio.currentTime=Number(pSeek.value)/100*d}catch(_){}syncPreview()}});
+  ['loadedmetadata','timeupdate','durationchange','play','pause'].forEach(ev=>audio?.addEventListener(ev,syncPreview));
+  audio?.addEventListener('ended',()=>{audio.currentTime=0;syncPreview()});
   $('qcVoiceDeleteNow')?.addEventListener('click',()=>{resetVoice();status.textContent='Voice recording deleted.'});
   $('qcVoiceSendNow')?.addEventListener('click',async()=>{
    if(!blob)return;
@@ -1488,7 +1489,7 @@ document.getElementById('chatVoiceBtn').addEventListener('click',async()=>{if(qc
      stopTracks();clearTimer();
      blob=new Blob(chunks,{type:recorder?.mimeType||'audio/webm'});
      if(!blob.size){resetVoice();status.textContent='Audio record nahi hua. Dobara try karo.';return}
-     previewUrl=URL.createObjectURL(blob);if(audio){audio.src=previewUrl;audio.load()}
+     recDur=Math.max(1,Math.round((Date.now()-startedAt)/1000));previewUrl=URL.createObjectURL(blob);if(audio){audio.src=previewUrl;audio.load()}if(pPlayer)pPlayer.hidden=false;syncPreview();
      if(recState)recState.hidden=true;
      const stop=$('qcVoiceStop');if(stop)stop.hidden=true;
      $('qcVoiceSendNow').hidden=false;$('qcVoiceDeleteNow').hidden=false;
